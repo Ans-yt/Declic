@@ -9,3 +9,6 @@ export type PublicSource = { url: string; dataset: string; publisher: string; li
 export type CataloguePage = { results: Formation[]; total: number; page: number; pageSize: number; year: number; source: PublicSource };
 export type AdmissionHistory = { year: number; capacity: number | null; applicants: number | null; offers: number | null; enrolled: number | null; accessRate: number | null; selection: string | null; source: PublicSource };
 export type FormationDetail = { formation: Formation; source: PublicSource; history: AdmissionHistory | null; historyUnavailable: boolean };
+export type CatalogueFilters = { region?: string; institution?: string };
+export type Establishment = { id: string; code: string; name: string; city: string; region: string; lat: number; lon: number; courses: number };
+export type EstablishmentMap = { establishments: Establishment[]; year: number; courses: number; unmapped: number; source: PublicSource };

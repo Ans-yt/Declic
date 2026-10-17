@@ -10,7 +10,7 @@ Panels 12px, inputs 8px, outlined buttons 20px, app footer top corners 25–32px
 
 Workspace retains stable sidebar navigation. Welcome uses an asymmetric paper composition with a framed login area, stacking below 650px. The user subsequently requested a nonrealistic main image: assets/notebook-illustration.png is a generated flat gouache-style notebook scene, shared by the welcome and dashboard. This illustration overrides the earlier photography preference for the main asset. Optional additional stickers await user attachment.
 
-Existing profile, mock ENT, CV, comparison and staff flows remain clickable. Domain content remains explicitly placeholder-only. Current theme overrides are in superr.css.
+Existing profile, mock ENT, CV, comparison and staff flows remain clickable. Programme content uses official public data; private institutional workflows remain explicitly simulated. Current theme overrides are in superr.css.
 
 The chosen name is Déclic, rendered as lowercase déclic in wordmarks. User-provided star and lightning stickers flank the notebook artwork; the smiley sits on the welcome panel corner; the heart decorates guidance notes. Stickers retain their original colors as decoration, have empty alt/hidden accessibility semantics, ignore pointer input and shrink on mobile. System navigation icons remain separate.
 
@@ -22,11 +22,23 @@ The main implementation is now React/TypeScript in `src/`. CSS loads in this ord
 
 - Dashboard: large title and transparent kit notebook, three sequential journey panels, next action and guidance.
 - Welcome: supplied wordmark, outlined entry panel and original generated notebook; both notebook illustrations are intentionally used on different routes.
-- CV: compact expandable section outline beside a white bordered document preview; skills/languages rendered as text chips; browser A4 print rules hide the editor and empty sections.
-- Formations: bordered cards, supplied-brand heart motif, selection tray and shared-row comparison table. Domain content stays explicitly placeholder-only.
+- CV: seven expandable sections beside a white bordered document preview; skills/languages rendered as text chips. Diplomas/awards add a restrained dashed upload area, proof thumbnail, editable metadata and optional OCR suggestion. Browser A4 print rules hide the editor and empty sections, and include named awards and their images.
+- Formations: bordered cards, supplied-brand heart motif, selection tray and shared-row comparison table. Programme cards now use real official public data, while personal demo records remain separate.
 - Decisions: criteria/evidence/explanation table and a separate clarification panel. The live records come only from local demo entry.
 - Professionals: bordered inbox and review desk; replacement request list and assignment area, availability and hours views. Clipboard and calendar stickers come from the kit. The replacement progress line reflects actual local mission state.
 
 Use the compact self-hosted `assets/fonts/Fraunces-600.woff2` (weight 600) and preserve its OFL license. Curated live assets are in `assets/brand/`, `assets/illustrations/`, `assets/stickers/`, and `assets/marks/`. Do not reference original kit export paths from application code. Decorative images have empty alt text and ignore pointer events; notebook illustrations have descriptive alt text. Keep annotations legible, avoid placing stickers over controls, and respect reduced-motion settings.
 
 Large desktops retain two-column CV/review layouts; workbenches stack below 1000px. Sidebar keeps its existing 600px mobile breakpoint. Main content uses fluid padding with a 20px phone gutter. The comparison table alone can scroll horizontally on narrow screens; the document itself must not overflow.
+
+## Language control and catalogue surfaces
+
+A compact FR/EN segmented control sits at the top right, including on the welcome page, and exposes pressed states and language labels. It is hidden for printing. Header breadcrumbs can truncate at narrow widths and the secondary prototype label hides below 1100px to reserve room. Sidebar structure, width, icons and visual treatment stay intact; labels translate to their equivalents.
+
+`src/i18n.ts` owns preference detection, persistence and formatting; `src/locales/en.json` contains translations of authored French interface copy. `src/catalogue.css` follows `src/media-kit.css` in the stylesheet order. Live programme cards preserve the notebook palette and borders while accommodating longer official names. Source information separates real public data from fictional personal-demo workflows. Catalogue loading, empty results, error/retry and explicitly stale snapshots are visible states. The comparison table remains independently scrollable; new labels must not make the page overflow.
+
+## Map, achievements and professional access
+
+`src/map.css` and `src/awards-access.css` follow catalogue styles. The formation search shares a row with a labelled region selector and Search action, stacking on phones. Map/list controls sit below. The map extends the notebook palette with local cream-filled administrative outlines and cocoa cluster circles; individual sites use small orange markers. Regions remain visible at overview, departments join at zoom 7+, and zoom controls remain available without mouse-wheel capture. Map height is 440px desktop / 350px phone. Source vintage, legend, geolocated-site counts, error/retry and missing-coordinate notices stay visible. The list remains usable if the map fails. No outside map tiles or invented basemap imagery.
+
+The awards accordion keeps the incumbent CV composition, with one document image and editing fields per award. Images are contained without cropping. A successful OCR read offers an explicit “use this title” choice; it never silently overwrites entered text. The professional login is a single outlined panel within the existing shell, followed by a compact signed-in identity/logout strip. Sidebar appearance and navigation order stay intact; choosing Établissement reaches this server-backed gate. Institutional OIDC/provisioning setup has no navigation item, as requested.

@@ -1,0 +1,14 @@
+node_modules
+dist
+dist-server
+data
+.git
+.env
+.env.*
+!.env.example
+.impeccable
+preview-*.png
+assets/Media kit
+assets/vendor
+*.log
+*.sqlite*

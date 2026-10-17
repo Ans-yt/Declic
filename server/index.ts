@@ -1,13 +1,16 @@
 import express from 'express';
-import { mkdirSync } from 'node:fs';
+import { mkdirSync, existsSync } from 'node:fs';
+import { loadEnvFile } from 'node:process';
 import { resolve, dirname } from 'node:path';
 import { createApp } from './app.js';
 
+if (existsSync('.env')) loadEnvFile('.env');
 const dbPath = resolve(process.env.DECLIC_DB || 'data/declic.sqlite');
 mkdirSync(dirname(dbPath), { recursive: true });
 const { app, close } = createApp(dbPath);
 const development = process.argv[1].endsWith('.ts');
 app.use('/assets', express.static(resolve('assets')));
+app.get('/{*path}', (req,res,next) => { if (/^\/(?:src|server|shared|node_modules|\.env|data|tests)\b/.test(req.path) && !development) return res.sendStatus(404); next(); });
 if (development) {
   const { createServer } = await import('vite');
   const vite = await createServer({ server: { middlewareMode: true }, appType: 'spa' });
@@ -17,6 +20,7 @@ if (development) {
   app.get('/{*path}', (_req, res) => res.sendFile(resolve('dist/index.html')));
 }
 const port = Number(process.env.PORT || 4173);
-const server = app.listen(port, '127.0.0.1', () => console.log(`Déclic : http://127.0.0.1:${port} — ${development ? 'développement' : 'version compilée'}`));
+const host = process.env.HOST || (process.env.NODE_ENV === 'production' ? '0.0.0.0' : '127.0.0.1');
+const server = app.listen(port, host, () => console.log(`Déclic : port ${port} — ${development ? 'développement' : 'version compilée'}`));
 server.on('error', error => { console.error(error.message); close(); process.exit(1); });
 for (const signal of ['SIGINT', 'SIGTERM'] as const) process.on(signal, () => { server.close(() => { close(); process.exit(0); }); });

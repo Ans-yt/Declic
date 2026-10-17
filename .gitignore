@@ -20,3 +20,6 @@ coverage/
 preview-*.png
 # Original media-kit exports; the application uses curated copies in assets/
 assets/Media kit/
+
+# Generated local OCR runtime copied from installed npm packages
+assets/vendor/

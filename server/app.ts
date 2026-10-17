@@ -1,15 +1,20 @@
 import express, { type ErrorRequestHandler } from 'express';
 import { DatabaseSync } from 'node:sqlite';
 import { randomUUID } from 'node:crypto';
+import multer from 'multer';
 import { z } from 'zod';
 import { createCatalogue, PublicDataError } from './catalogue.js';
+import { installAuth, requireStaff, workspaceContext, workspaceId } from './auth.js';
+import { readConfig, type AppConfig } from './config.js';
+import { installAttachments } from './attachments.js';
 import { applicationSchema, blankCV, blankProfile, candidateSchema, cvSchema, hoursSchema, needSchema, profileSchema, reviewSchema, type Application, type Candidate, type Need, type Workspace } from '../shared/models.js';
 
 class HttpError extends Error { constructor(public status: number, message: string) { super(message); } }
 const normal = (v: string) => v.trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('fr');
 const minutes = (time: string) => Number(time.slice(0, 2)) * 60 + Number(time.slice(3));
 
-export function createApp(dbPath: string, options: { fetcher?: typeof fetch } = {}) {
+export function createApp(dbPath: string, options: { fetcher?: typeof fetch; config?: AppConfig } = {}) {
+  const config = options.config || readConfig();
   const db = new DatabaseSync(dbPath);
   db.exec(`PRAGMA journal_mode=WAL; PRAGMA busy_timeout=5000;
     CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, body TEXT NOT NULL);
@@ -17,35 +22,59 @@ export function createApp(dbPath: string, options: { fetcher?: typeof fetch } = 
     CREATE TABLE IF NOT EXISTS candidates (id TEXT PRIMARY KEY, body TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS needs (id TEXT PRIMARY KEY, body TEXT NOT NULL);
     PRAGMA user_version=1;`);
+  db.exec('CREATE TABLE IF NOT EXISTS scoped_settings (workspace TEXT NOT NULL,key TEXT NOT NULL,body TEXT NOT NULL,PRIMARY KEY(workspace,key))');
+  for (const table of ['applications','candidates','needs']) {
+    const columns = db.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[];
+    if (!columns.some(c => c.name === 'workspace')) db.exec(`ALTER TABLE ${table} ADD COLUMN workspace TEXT NOT NULL DEFAULT 'legacy'`);
+    db.exec(`CREATE INDEX IF NOT EXISTS ${table}_workspace ON ${table}(workspace)`);
+  }
+  db.exec("INSERT OR IGNORE INTO scoped_settings SELECT 'legacy',key,body FROM settings WHERE key IN ('profile','cv','saved')");
   const catalogue = createCatalogue(db, options.fetcher);
   type Table = 'applications' | 'candidates' | 'needs';
-  function list<T>(table: Table): T[] { return (db.prepare(`SELECT body FROM ${table} ORDER BY rowid DESC`).all() as { body: string }[]).map(r => JSON.parse(r.body) as T); }
-  function get<T>(table: Table, id: string): T { const row = db.prepare(`SELECT body FROM ${table} WHERE id=?`).get(id) as { body: string } | undefined; if (!row) throw new HttpError(404, 'Cet élément est introuvable.'); return JSON.parse(row.body) as T; }
-  function put(table: Table, entity: { id: string }) { db.prepare(`INSERT INTO ${table} (id,body) VALUES (?,?) ON CONFLICT(id) DO UPDATE SET body=excluded.body`).run(entity.id, JSON.stringify(entity)); }
-  function setting<T>(key: string, fallback: T): T { const row = db.prepare('SELECT body FROM settings WHERE key=?').get(key) as { body: string } | undefined; return row ? JSON.parse(row.body) as T : fallback; }
-  function set(key: string, value: unknown) { db.prepare('INSERT INTO settings (key,body) VALUES (?,?) ON CONFLICT(key) DO UPDATE SET body=excluded.body').run(key, JSON.stringify(value)); }
-  function workspace(): Workspace { return { profile: setting('profile', blankProfile), cv: setting('cv', blankCV), saved: setting<unknown[]>('saved', []).filter((id): id is string => typeof id === 'string' && /^\d{4}:\d+$/.test(id)), applications: list('applications'), candidates: list('candidates'), needs: list('needs') }; }
+  function list<T>(table: Table): T[] { return (db.prepare(`SELECT body FROM ${table} WHERE workspace=? ORDER BY rowid DESC`).all(workspaceId()) as { body: string }[]).map(r => JSON.parse(r.body) as T); }
+  function get<T>(table: Table, id: string): T { const row = db.prepare(`SELECT body FROM ${table} WHERE id=? AND workspace=?`).get(id, workspaceId()) as { body: string } | undefined; if (!row) throw new HttpError(404, 'Cet élément est introuvable.'); return JSON.parse(row.body) as T; }
+  function put(table: Table, entity: { id: string }) { db.prepare(`INSERT INTO ${table} (id,body,workspace) VALUES (?,?,?) ON CONFLICT(id) DO UPDATE SET body=excluded.body WHERE workspace=excluded.workspace`).run(entity.id, JSON.stringify(entity), workspaceId()); }
+  function setting<T>(key: string, fallback: T): T { const row = db.prepare('SELECT body FROM scoped_settings WHERE workspace=? AND key=?').get(workspaceId(), key) as { body: string } | undefined; return row ? JSON.parse(row.body) as T : fallback; }
+  function set(key: string, value: unknown) { db.prepare('INSERT INTO scoped_settings (workspace,key,body) VALUES (?,?,?) ON CONFLICT(workspace,key) DO UPDATE SET body=excluded.body').run(workspaceId(), key, JSON.stringify(value)); }
+  function workspace(): Workspace { const staff = workspaceContext.getStore()?.staff; return { profile: setting('profile', blankProfile), cv: cvSchema.parse(setting('cv', blankCV)), saved: setting<unknown[]>('saved', []).filter((id): id is string => typeof id === 'string' && /^\d{4}:\d+$/.test(id)), applications: list<Application>('applications').map(a => staff || a.status === 'published' ? a : { ...a, review: null }), candidates: staff ? list('candidates') : [], needs: staff ? list('needs') : [] }; }
   function compatible(need: Need, candidate: Candidate) {
     return candidate.verified && normal(candidate.subject) === normal(need.subject) && normal(candidate.city) === normal(need.city) && candidate.date === need.date && candidate.start <= need.start && candidate.end >= need.end && !list<Need>('needs').some(n => n.id !== need.id && n.candidateId === candidate.id && ['confirmed', 'completed'].includes(n.status) && n.date === need.date && n.start < need.end && n.end > need.start);
   }
   const app = express(); app.disable('x-powered-by');
+  app.set('trust proxy', config.trustProxy);
+  app.use((_req,res,next) => { res.setHeader('X-Content-Type-Options','nosniff'); res.setHeader('Referrer-Policy','same-origin'); res.setHeader('X-Frame-Options','DENY'); res.setHeader('Permissions-Policy','geolocation=(self), camera=(), microphone=()'); next(); });
   app.use('/api', (req, res, next) => {
     res.setHeader('Cache-Control', 'no-store'); res.setHeader('X-Content-Type-Options', 'nosniff');
-    // The prototype is intentionally local and shared. Do not expose it as a multi-user service.
     const allowedHosts = ['127.0.0.1', 'localhost', '[::1]'];
-    if (!allowedHosts.includes(req.hostname)) return res.status(403).json({ error: 'Cette démonstration est accessible uniquement en local.' });
-    if (req.headers.origin && req.headers.origin !== `${req.protocol}://${req.headers.host}`) return res.status(403).json({ error: 'Origine de la requête non autorisée.' });
-    if (!['GET', 'HEAD', 'OPTIONS'].includes(req.method) && !req.is('application/json')) return res.status(415).json({ error: 'Le format JSON est nécessaire.' });
+    if (!allowedHosts.includes(req.hostname) && (!config.origin || req.hostname !== new URL(config.origin).hostname)) return res.status(403).json({ error: 'Hôte non autorisé.' });
+    const expected = config.origin || `${req.protocol}://${req.headers.host}`;
+    if (req.headers.origin && req.headers.origin !== expected) return res.status(403).json({ error: 'Origine de la requête non autorisée.' });
+    if (!['GET', 'HEAD', 'OPTIONS'].includes(req.method) && req.path !== '/attachments' && req.get('content-type')?.split(';')[0]?.trim() !== 'application/json') return res.status(415).json({ error: 'Le format JSON est nécessaire.' });
+    if (req.path === '/attachments' && req.method === 'POST' && !req.is('multipart/form-data')) return res.status(415).json({ error: 'Choisissez une image PNG, JPEG ou WebP.' });
     next();
   });
   app.use(express.json({ limit: '256kb' }));
-  app.get('/api/health', (_req, res) => res.json({ ok: true, storage: 'sqlite', mode: 'local-demo' }));
-  app.get('/api/catalogue', async (req,res) => { const input = z.object({ q: z.string().max(100).default(''), page: z.coerce.number().int().min(1).max(416).default(1) }).parse(req.query); res.json(await catalogue.list(input.q, input.page)); });
-  app.get('/api/catalogue/:id', async (req,res) => { const id = z.string().regex(/^\d{4}:\d+$/).parse(req.params.id); const detail = await catalogue.detail(id); if (!detail) throw new HttpError(404, 'Formation introuvable dans le catalogue officiel.'); res.json(detail); });
+  installAuth(app, db, config);
+  installAttachments(app, db);
+  const filters = { q: z.string().max(100).default(''), region: z.string().max(100).default(''), institution: z.string().regex(/^[A-Za-z0-9]*$/).max(12).default('') };
+  app.get('/api/health', (_req, res) => res.json({ ok: true, storage: 'sqlite', mode: 'isolated-demo' }));
+  app.get('/api/catalogue/map', async (req,res) => { const input = z.object(filters).parse(req.query); res.json(await catalogue.map(input.q,input)); });
+  app.get('/api/catalogue', async (req,res) => { const input = z.object({ ...filters, page: z.coerce.number().int().min(1).max(416).default(1) }).parse(req.query); res.json(await catalogue.list(input.q, input.page,input)); });
+  app.get('/api/catalogue/:id', async (req,res) => { const id = z.string().regex(/^\d{4}:\d+$/).parse(req.params.id); const detail = await catalogue.detail(id, req.query.history !== 'false'); if (!detail) throw new HttpError(404, 'Formation introuvable dans le catalogue officiel.'); res.json(detail); });
   app.get('/api/workspace', (_req, res) => res.json(workspace()));
   app.put('/api/profile', (req, res) => { set('profile', profileSchema.parse(req.body)); res.json(workspace()); });
-  app.put('/api/cv', (req, res) => { set('cv', cvSchema.parse(req.body)); res.json(workspace()); });
+  app.put('/api/cv', (req, res) => {
+    const cv = cvSchema.parse(req.body), previous = cvSchema.parse(setting('cv', blankCV));
+    for (const award of cv.awards) if (award.attachmentId && !db.prepare('SELECT id FROM attachments WHERE id=? AND workspace=?').get(award.attachmentId, workspaceId())) throw new HttpError(400, 'Pièce jointe introuvable.');
+    db.exec('BEGIN IMMEDIATE');
+    try { set('cv', cv); for(const award of previous.awards) if(award.attachmentId && !cv.awards.some(a => a.attachmentId === award.attachmentId)) db.prepare('DELETE FROM attachments WHERE id=? AND workspace=?').run(award.attachmentId,workspaceId()); db.exec('COMMIT'); } catch(e) { db.exec('ROLLBACK'); throw e; }
+    res.json(workspace());
+  });
   app.put('/api/saved', (req, res) => { set('saved', z.array(z.string().regex(/^\d{4}:\d+$/)).max(100).parse(req.body)); res.json(workspace()); });
+  app.use('/api', (req,res,next) => {
+    const guarded = /^\/(needs|candidates)(\/|$)/.test(req.path) || req.path === '/applications' && req.method === 'POST' || /^\/applications\/[^/]+\/(review|publish)(\/|$)/.test(req.path) || /^\/applications\/[^/]+\/questions\/[^/]+$/.test(req.path);
+    return guarded ? requireStaff(req,res,next) : next();
+  });
   app.post('/api/applications', (req, res) => {
     const input = applicationSchema.parse(req.body);
     if (list<Application>('applications').some(a => normal(a.reference) === normal(input.reference))) throw new HttpError(409, 'Cette référence existe déjà. Choisissez une référence unique.');
@@ -67,6 +96,7 @@ export function createApp(dbPath: string, options: { fetcher?: typeof fetch } = 
     if (error instanceof z.ZodError) { res.status(400).json({ error: 'Vérifiez les champs : ' + error.issues.map(i => `${i.path.join('.')} — ${i.message}`).join(' ; ') }); return; }
     if (error instanceof PublicDataError) { res.status(error.status).json({ error: error.message }); return; }
     if (error instanceof HttpError) { res.status(error.status).json({ error: error.message }); return; }
+    if (error instanceof multer.MulterError) { res.status(400).json({ error: 'Image illisible ou trop grande. Utilisez un PNG, JPEG ou WebP de 8 Mo maximum.' }); return; }
     if (error.type === 'entity.parse.failed' || error.type === 'entity.too.large') { res.status(400).json({ error: 'Le contenu envoyé est invalide ou trop volumineux.' }); return; }
     console.error(error); res.status(500).json({ error: 'L’enregistrement a échoué. Réessayez sans quitter votre saisie.' });
   };
