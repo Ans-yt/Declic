@@ -1,0 +1,22 @@
+node_modules/
+dist/
+dist-server/
+data/
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+.env
+.env.*
+!.env.example
+*.log
+*.tsbuildinfo
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+coverage/
+# Local design tooling, captures and drafts
+.impeccable/
+preview-*.png
+# Original media-kit exports; the application uses curated copies in assets/
+assets/Media kit/
