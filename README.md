@@ -1,7 +1,6 @@
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="assets/logo%20assets%20nd%20others/declic-dark-wordmark.png">
+<p align="center">
   <img src="assets/logo%20assets%20nd%20others/declic-wordmark.png" alt="Déclic" width="360">
-</picture>
+</p>
 
 - **Déclic** — a hackathon prototype helping French students explore higher education and education professionals explain admissions decisions and coordinate teaching cover.
 - **Presentation:** watch the English launch film below.
