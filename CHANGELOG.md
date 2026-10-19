@@ -1,0 +1,41 @@
+- **Development history** — milestones from the first clickable demonstration to the current prototype, in chronological order.
+- Built the initial HTML, CSS and JavaScript interface with linked student and professional journeys.
+- Added student profiles, programme exploration, application tracking, explained decisions and help pages.
+- Introduced CV editing and an explicitly simulated ENT-prefill flow with editable placeholders.
+- Adopted the Déclic name, notebook illustration, supplied stickers and warm paper/cocoa/orange identity.
+- Integrated the media kit and redesigned the CV and professional workspaces.
+- Migrated the interface to React, TypeScript and Vite.
+- Added the Node.js/Express API, shared validation and SQLite persistence.
+- Persisted profiles, CVs, favourites, applications, decisions, teaching-cover records and completed hours.
+- Expanded the CV into seven sections with repeatable, reorderable entries, a live preview and A4 print/PDF output.
+- Preserved unsaved CV edits across routes and added a browser-leave warning.
+- Implemented explained admissions reviews, immutable published decisions, student questions and staff replies.
+- Implemented teaching-cover needs, candidate availability, subject/location/time matching, assignment confirmation and cancellation.
+- Added checks for overlapping assignments, incomplete verification, future hours and hours exceeding a mission.
+- Connected official programme and admissions-history APIs with source attribution, dated statistics and safe query handling.
+- Added programme search, pagination, saved courses, comparison and official detail links.
+- Added public-data caching, labelled stale results and recoverable upstream-error states.
+- Translated student and professional interfaces into English, with browser-language detection and a persistent FR/EN preference.
+- Added local administrative boundaries, region filters, establishment clustering and optional geolocation.
+- Added private diploma/award images, editable metadata and optional on-device French/English OCR suggestions.
+- Added visitor isolation, image ownership checks, image re-encoding and upload quotas.
+- Protected professional routes with hashed passwords, HttpOnly sessions, rate limiting and logout.
+- Added configurable OIDC/PKCE sign-in and authenticated identity provisioning for future institutional adoption.
+- Added environment configuration, production HTTPS/host checks, a Docker build and deployment instructions.
+- Fixed SQLite path/URL handling, parent-directory creation and actionable storage-startup errors.
+- Added country context, distinct campus-abroad markers, country shortcuts and separate overseas handling.
+- Added stable neighbouring-department colours, borders, labels and map interaction improvements.
+- Added eight curated subject images, consistent portrait framing and self-hosted Young Serif typography.
+- Integrated the WebGL liquid-glass carousel with lazy loading, offscreen suspension and a reduced-motion/image-card fallback.
+- Added subject-search links, rightward card wipes and accessible letter-cascade headings.
+- Reworked dropdowns, calendar popovers, loading indicators, buttons and keyboard focus behaviour.
+- Moved the ENT-prefill action into the profile form with a separate simulation note.
+- Enlarged and contained the glass pill; added three-second automatic advancement, hover/focus pauses and explicit playback controls.
+- Updated map geometry and markers continuously during dragging, with padded queries, marker reuse and bounded inertia.
+- Animated the FR/EN selector and introduced shared Radix-backed comparison and ENT checkboxes.
+- Added Tailwind/shadcn configuration and a sidebar with real workspace switching, route search, desktop collapse and a mobile drawer.
+- Added mobile focus containment, background isolation, scroll locking and focus restoration.
+- Corrected workspace-menu typography and option alignment.
+- Added French/English presentation players to the welcome and overview pages, with lazy media loading and recoverable video errors.
+- Rewrote the README, linked the English launch film and documented the full development history.
+- Added regression coverage for persistence, validation, permissions, uploads, scheduling, geography, OCR and bilingual behaviour.

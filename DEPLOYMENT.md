@@ -8,6 +8,18 @@ For a Node deployment, use Node 24 LTS, install build dependencies with `npm ci 
 
 Mount a **persistent disk at `/app/data`** (or another writable path and update `DECLIC_DB`). Keep **one app instance / replica** with this SQLite deployment. The database contains uploaded images as well as saved drafts and sessions. Back up the database with SQLite's backup mechanism or stop the app before copying it; copying only a live `.sqlite` file can omit WAL transactions. An ephemeral container filesystem will lose data on redeployment. If your DeployXA plan has no persistent disk, use a VPS/persistent container option before inviting users to save drafts.
 
+### SQLite startup failures on a managed host
+
+`unable to open database file` / `ERR_SQLITE_ERROR` code 14 means the process failed to open storage before it could listen for HTTP requests. Repeating health checks or increasing their timeout does not fix that failure.
+
+The server selects storage in this order: explicit `DECLIC_DB`, then host-injected `DATABASE_URL`, then `data/declic.sqlite` relative to the project root (`/app/data/declic.sqlite` in this Docker image). SQLite `file:` and `sqlite:` URLs are accepted; PostgreSQL/MySQL URLs are rejected. An explicit `DECLIC_DB` overrides the host URL, so remove an obsolete override if using the managed SQLite location. The Dockerfile does not force an override.
+
+Use a **file** inside the actual mounted directory: if the mount is `/app/data`, set `DECLIC_DB=/app/data/declic.sqlite`, not `/app/data`. Do not assume DeployXA's managed SQLite uses that mount; obtain its injected path/mount from the dashboard. Never copy a URL such as `file:/data/app.sqlite` as a literal directory name. The next startup logs the selected file and its configuration source without dumping environment secrets. It fails with a clearer error for a directory target or inaccessible storage; it does not fall back to a disposable database.
+
+The Docker image runs as `node` (UID/GID 1000). Its build-time directory ownership cannot repair a host mount placed over that directory at runtime. If the host mounts a root-owned directory, configure volume ownership/access for UID 1000 or ask the host to do so; the database and its parent must be writable for SQLite WAL/journal files. Existing database, `-wal`, and `-shm` files must also be accessible. Keep existing data and backups; do not delete the database or grant global write access as a workaround.
+
+Once the storage path and permissions are corrected, redeploy the updated source with `APP_ORIGIN` set to the real public **HTTPS** origin. DeployXA's internal HTTP health polling does not change the required public origin.
+
 ## Environment and secrets
 
 Use `.env.example` as the reference. Set these in DeployXA's environment/secret settings, not in a committed `.env` or in frontend `VITE_*` variables:

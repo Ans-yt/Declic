@@ -438,5 +438,7 @@
   "Image illisible ou trop grande. Utilisez un PNG, JPEG ou WebP de 8 Mo maximum.": "Unreadable or oversized image. Use a PNG, JPEG or WebP up to 8 MB.",
   "Pièce jointe introuvable.": "Attachment not found.",
   "Retirez l’image du CV et enregistrez avant de la supprimer.": "Remove the image from the CV and save before deleting it.",
-  "Hôte non autorisé.": "This host is not authorised."
+  "Hôte non autorisé.": "This host is not authorised.",
+  "Préremplir avec l’ENT": "Prefill with your ENT",
+  "Simulation · aucun compte connecté": "Simulation · no account connected"
 }

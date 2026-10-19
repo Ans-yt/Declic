@@ -1,5 +1,6 @@
+import { DateInput, LoadingIndicator } from './components/Controls';
 import { t } from "./i18n";
-import { useId, useState, type ReactNode, type InputHTMLAttributes } from 'react';
+import { useId, useState, useRef, type ReactNode, type InputHTMLAttributes } from 'react';
 const paths: Record<string, ReactNode> = {
   heart: <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8z" />,
   home: <><path d="m3 10 9-7 9 7v11H3z" /><path d="M9 21v-8h6v8" /></>,
@@ -26,6 +27,7 @@ const paths: Record<string, ReactNode> = {
   upload: <><path d="M12 16V3m-5 5 5-5 5 5M4 16v5h16v-5"/></>,
   award: <><circle cx="12" cy="8" r="5"/><path d="m8 12-2 10 6-3 6 3-2-10"/></>,
   lock: <><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V6a4 4 0 0 1 8 0v4M12 14v3"/></>
+  ,globe: <><circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="4" ry="9"/><path d="M3 12h18"/></>
 };
 export function Icon({
   name
@@ -74,7 +76,7 @@ export function Field({
   multiline?: boolean;
 } & Omit<InputHTMLAttributes<HTMLInputElement>, 'onChange' | 'value'>) {
   const id = useId();
-  return <label className="field" htmlFor={id}>{t(label)}{multiline ? <textarea id={id} value={value} onChange={e => onChange(e.target.value)} rows={4} maxLength={6000} placeholder={props.placeholder ? t(props.placeholder) : undefined} required={props.required} /> : <input id={id} value={value} onChange={e => onChange(e.target.value)} maxLength={300} {...props} placeholder={props.placeholder ? t(props.placeholder) : undefined} />}</label>;
+  return <label className="field" htmlFor={id}>{t(label)}{multiline ? <textarea id={id} value={value} onChange={e => onChange(e.target.value)} rows={4} maxLength={6000} placeholder={props.placeholder ? t(props.placeholder) : undefined} required={props.required} /> : props.type === 'date' ? <DateInput {...props} id={id} value={value} onValueChange={onChange}/> : <input id={id} value={value} onChange={e => onChange(e.target.value)} maxLength={300} {...props} placeholder={props.placeholder ? t(props.placeholder) : undefined} />}</label>;
 }
 export function Empty({
   title,
@@ -115,10 +117,13 @@ export function Workflow({
   return <ol className="workflow" aria-label={t("Avancement")}>{steps.map((label, index) => <li key={label} className={index < current ? 'done' : index === current ? 'current' : ''} aria-current={index === current ? 'step' : undefined}><span className="workflow-node">{index < current ? <Icon name="check" /> : <span />}</span><strong>{t(label)}</strong></li>)}</ol>;
 }
 export function useAction() {
+  const pending = useRef(false);
   const [busy, setBusy] = useState(false),
     [message, setMessage] = useState(''),
     [error, setError] = useState('');
   async function run(work: () => Promise<void>, success = t('Enregistré.')) {
+    if (pending.current) return;
+    pending.current = true;
     setBusy(true);
     setError('');
     setMessage('');
@@ -128,12 +133,13 @@ export function useAction() {
     } catch (e) {
       setError(e instanceof Error ? e.message : t('Une erreur est survenue. Réessayez.'));
     } finally {
+      pending.current = false;
       setBusy(false);
     }
   }
   return {
     busy,
     run,
-    feedback: <>{error && <div className="inline-error" role="alert">{t(error)}</div>}<p className="save-feedback" role="status">{t(message)}</p></>
+    feedback: <>{busy && <LoadingIndicator inline label={t('Enregistrement…')}/>} {error && <div className="inline-error" role="alert">{t(error)}</div>}<p className="save-feedback" role="status">{t(message)}</p></>
   };
 }

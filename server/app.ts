@@ -1,5 +1,5 @@
 import express, { type ErrorRequestHandler } from 'express';
-import { DatabaseSync } from 'node:sqlite';
+import { openDatabase } from './storage.js';
 import { randomUUID } from 'node:crypto';
 import multer from 'multer';
 import { z } from 'zod';
@@ -15,7 +15,7 @@ const minutes = (time: string) => Number(time.slice(0, 2)) * 60 + Number(time.sl
 
 export function createApp(dbPath: string, options: { fetcher?: typeof fetch; config?: AppConfig } = {}) {
   const config = options.config || readConfig();
-  const db = new DatabaseSync(dbPath);
+  const db = openDatabase(dbPath);
   db.exec(`PRAGMA journal_mode=WAL; PRAGMA busy_timeout=5000;
     CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, body TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS applications (id TEXT PRIMARY KEY, body TEXT NOT NULL);

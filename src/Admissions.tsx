@@ -1,3 +1,4 @@
+import { Select } from './components/Controls';
 import { t } from "./i18n";
 import { useState } from 'react';
 import { outcomeLabels, type Application, type Review } from '../shared/models';
@@ -27,7 +28,7 @@ export function Admissions({
     }} aria-expanded={creating}><Icon name="plus" />{t("Ajouter une candidature")}</button>}>{t("Chaque décision s’accompagne de motifs que l’élève pourra lire.")}</Heading>
     <div className="workspace-strip"><span><Icon name="folder" />{t("Bureau des admissions")}</span><p>{t("Espace de démonstration partagé · utilisez des dossiers fictifs.")}</p></div>
     {creating && <ApplicationForm mutate={mutate} done={() => setCreating(false)} />}
-    <div className="review-workbench"><section className="inbox"><div className="inbox-heading"><h2>{t("Candidatures")}</h2><span>{applications.length}</span></div><label className="desk-search"><Icon name="search" /><input value={query} onChange={e => setQuery(e.target.value)} placeholder={t("Rechercher un dossier…")} aria-label={t("Rechercher une candidature")} /></label><label className="field inbox-filter">{t("Afficher")}<select value={filter} onChange={e => setFilter(e.target.value)}><option value="all">{t("Tous les dossiers")}</option>{Object.entries(statusLabels).map(([v, label]) => <option key={v} value={v}>{t(label)}</option>)}</select></label>
+    <div className="review-workbench"><section className="inbox"><div className="inbox-heading"><h2>{t("Candidatures")}</h2><span>{applications.length}</span></div><label className="desk-search"><Icon name="search" /><input value={query} onChange={e => setQuery(e.target.value)} placeholder={t("Rechercher un dossier…")} aria-label={t("Rechercher une candidature")} /></label><label className="field inbox-filter">{t("Afficher")}<Select value={filter} onChange={e => setFilter(e.target.value)}><option value="all">{t("Tous les dossiers")}</option>{Object.entries(statusLabels).map(([v, label]) => <option key={v} value={v}>{t(label)}</option>)}</Select></label>
       <div className="inbox-list">{shown.length ? shown.map(a => <button className={'inbox-item' + (a.id === selected ? ' selected' : '')} key={a.id} onClick={() => {
             setSelected(a.id);
             setCreating(false);
@@ -98,9 +99,9 @@ function Evaluation({
             evidence: v
           })} placeholder={t("*Ici, le fait qui étaye l’évaluation*")} /><Field label={t("Explication destinée au candidat")} required multiline value={review.explanation} onChange={v => update({
             explanation: v
-          })} placeholder={t("*Ici, le lien entre le critère et les éléments examinés*")} /><label className="field">{t("Réponse proposée")}<select value={review.outcome} onChange={e => update({
+          })} placeholder={t("*Ici, le lien entre le critère et les éléments examinés*")} /><label className="field">{t("Réponse proposée")}<Select value={review.outcome} onChange={e => update({
               outcome: e.target.value as Review['outcome']
-            })}>{Object.entries(outcomeLabels).map(([v, label]) => <option value={v} key={v}>{t(label)}</option>)}</select></label></fieldset>
+            })}>{Object.entries(outcomeLabels).map(([v, label]) => <option value={v} key={v}>{t(label)}</option>)}</Select></label></fieldset>
     {!locked && <div className="form-actions"><button className="button" disabled={a.busy}><Icon name="check" />{t("Enregistrer l’évaluation")}</button><button className="button secondary" type="button" disabled={a.busy || application.status !== 'reviewed' || dirty} onClick={() => void a.run(() => mutate(`/applications/${application.id}/publish`, {}), t('La réponse apparaît dans l’espace élève.'))}>{t("Partager la réponse")}<Icon name="arrow" /></button></div>}{a.feedback}
     {locked ? <p className="subtle-notice">{t("Réponse partagée dans l’espace élève. L’évaluation est conservée en lecture seule.")}</p> : <p className="subtle-notice">{t("Enregistrez l’évaluation avant de partager. Aucune transmission à Parcoursup.")}</p>}</form>
     {application.questions.length > 0 && <section className="clarification-thread"><h3>{t("Les demandes de clarification")}</h3>{application.questions.map(q => <QuestionReply key={q.id} question={q} applicationId={application.id} mutate={mutate} />)}</section>}

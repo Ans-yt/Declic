@@ -1,0 +1,14 @@
+/* Keep Déclic's existing base styles; enable utilities without a global reset. */
+@layer theme, base, components, utilities;
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/utilities.css' layer(utilities);
+@theme inline {
+  --color-background: var(--paper);
+  --color-foreground: var(--ink);
+  --color-card: var(--paper);
+  --color-border: var(--line);
+  --color-primary: var(--cocoa);
+  --color-primary-foreground: var(--paper);
+  --color-muted: var(--surface);
+  --color-muted-foreground: var(--muted);
+}

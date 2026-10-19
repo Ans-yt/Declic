@@ -1,13 +1,14 @@
 import express from 'express';
-import { mkdirSync, existsSync } from 'node:fs';
+import { existsSync } from 'node:fs';
 import { loadEnvFile } from 'node:process';
-import { resolve, dirname } from 'node:path';
+import { resolve } from 'node:path';
 import { createApp } from './app.js';
+import { databaseLocation } from './storage.js';
 
 if (existsSync('.env')) loadEnvFile('.env');
-const dbPath = resolve(process.env.DECLIC_DB || 'data/declic.sqlite');
-mkdirSync(dirname(dbPath), { recursive: true });
-const { app, close } = createApp(dbPath);
+const database = databaseLocation();
+console.log(`[storage] SQLite file ${JSON.stringify(database.path)} (source: ${database.source})`);
+const { app, close } = createApp(database.path);
 const development = process.argv[1].endsWith('.ts');
 app.use('/assets', express.static(resolve('assets')));
 app.get('/{*path}', (req,res,next) => { if (/^\/(?:src|server|shared|node_modules|\.env|data|tests)\b/.test(req.path) && !development) return res.sendStatus(404); next(); });

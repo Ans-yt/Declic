@@ -1,3 +1,5 @@
+import { LoadingIndicator } from './components/Controls';
+import { SidebarNav } from './components/ui/dashboard-sidebar';
 import { t, useLanguage, setLanguage } from "./i18n";
 import { useEffect, useRef, useState } from 'react';
 import { blankCV, type CV, type Workspace } from '../shared/models';
@@ -27,14 +29,13 @@ const routes: Record<string, string> = {
   formation: 'Fiche formation',
   comparer: 'Comparer les formations'
 };
-const studentLinks = [['accueil', 'home', 'Vue d’ensemble'], ['formations', 'search', 'Les formations'], ['dossier', 'folder', 'Mon dossier'], ['cv', 'file', 'Mon CV'], ['suivi', 'route', 'Mes candidatures'], ['decisions', 'file', 'Mes décisions']];
-const staffLinks = [['admissions', 'folder', 'Les candidatures'], ['remplacements', 'calendar', 'Les remplacements']];
 const currentRoute = () => location.hash.slice(1).split('/')[0] || 'connexion';
 export default function App() {
   const language = useLanguage();
   const [route, setRoute] = useState(currentRoute),
     [role, setRole] = useState('student'),
     [menu, setMenu] = useState(false),
+    [collapsed, setCollapsed] = useState(false),
     [data, setData] = useState<Workspace | null>(null),
     [error, setError] = useState(''),
     [cv, setCV] = useState<CV>(blankCV),
@@ -101,7 +102,7 @@ export default function App() {
   const staff = ['admissions', 'remplacements'].includes(route) || route === 'aide' && role === 'staff';
   function page() {
     if (error) return <section className="screen-error" role="alert"><h1>{t("Retrouvons votre espace.")}</h1><p>{error}</p><button className="button" onClick={() => void load()}>{t("Réessayer")}</button></section>;
-    if (!data) return <p className="app-loading" role="status">{t("Chargement de votre espace…")}</p>;
+    if (!data) return <div className="app-loading"><LoadingIndicator label={t("Chargement de votre espace…")}/></div>;
     switch (route) {
       case 'connexion':
         return <Welcome data={data} mutate={mutate} setCV={setCV} />;
@@ -131,11 +132,12 @@ export default function App() {
         return <section className="screen-error"><h1>{t("Cette page reste à trouver.")}</h1><a className="button" href="#accueil">{t("Retour à l’accueil")}</a></section>;
     }
   }
-  return <><div className="language-switch" role="group" aria-label={t("Langue")}><button type="button" lang="fr" onClick={() => setLanguage("fr")} aria-pressed={language === "fr"} title="Passer en français">FR</button><button type="button" lang="en" onClick={() => setLanguage("en")} aria-pressed={language === "en"} title="Switch to English">EN</button></div><a className="skip-link" href="#main" onClick={e => {
-      e.preventDefault();
-      mainRef.current?.focus();
-    }}>{t("Aller au contenu")}</a><aside className={'sidebar' + (menu ? ' open' : '')} id="sidebar"><a className="brand" href="#accueil" aria-label={t("Déclic, accueil")}><span className="brand-symbol" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M6 25V12L16 5l10 7v13M11 25V15l5-4 5 4v10M16 17v8" /></svg></span>{t("déclic")}<span className="brand-dot">.</span></a><div className="space-label">{t("L’orientation, à votre rythme.")}</div><label className="role-label" htmlFor="role">{t("Mon espace")}</label><select id="role" value={staff ? 'staff' : 'student'} onChange={e => {
-        setRole(e.target.value);
-        location.hash = e.target.value === 'staff' ? 'admissions' : 'accueil';
-      }}><option value="student">{t("Élève")}</option><option value="staff">{t("Établissement")}</option></select><nav id="navigation" aria-label={t("Navigation principale")}>{(staff ? staffLinks : studentLinks).map(([key, icon, label]) => <a key={key} className={'nav-link' + (route === key ? ' active' : '')} href={'#' + key} aria-current={route === key ? 'page' : undefined}><Icon name={icon} />{t(label)}</a>)}<div className="nav-caption">{t("Pour vous accompagner")}</div><a className={'nav-link' + (route === 'aide' ? ' active' : '')} href="#aide" aria-current={route === 'aide' ? 'page' : undefined}><Icon name="help" />{t("Aide & repères")}</a></nav><div className="sidebar-bottom"><a href="#aide" className="help-link"><Icon name="help" />{t("Besoin d’un repère ?")}<span aria-hidden="true">↗</span></a><div className="profile"><span className="avatar" aria-hidden="true"><Icon name="user" /></span><div><span className="placeholder">{t("*Votre prénom*")}</span><small>{t("*Votre établissement*")}</small></div><a href="#dossier" aria-label={t("Ouvrir mon profil")}><Icon name="arrow" /></a></div></div></aside><div className="shell"><header className="topbar"><button ref={menuRef} id="menu-toggle" className="icon-button mobile-only" aria-label={menu ? t('Fermer la navigation') : t('Ouvrir la navigation')} aria-expanded={menu} aria-controls="sidebar" onClick={() => setMenu(!menu)}><Icon name="menu" /></button><div className="breadcrumb">{t("Mon espace")}<span>/</span><span>{t(routes[route] || 'Page introuvable')}</span></div><div className="prototype-label"><span />{t("Données publiques & espace démo")}</div></header><main id="main" className={"route-" + route} tabIndex={-1} ref={mainRef}>{page()}</main><footer>{t("Déclic")}<span>{t("Un peu plus clair, un pas à la fois.")}</span><span>{t("Catalogue officiel · Dossiers de démonstration")}</span></footer></div></>;
+  return <>
+    <div className="language-switch" data-language={language} role="group" aria-label={t('Langue')}><span className="language-slider" aria-hidden="true"/><button type="button" lang="fr" onClick={() => setLanguage('fr')} aria-pressed={language === 'fr'} title="Passer en français">FR</button><button type="button" lang="en" onClick={() => setLanguage('en')} aria-pressed={language === 'en'} title="Switch to English">EN</button></div>
+    <a className="skip-link" href="#main" onClick={event => { event.preventDefault(); mainRef.current?.focus(); }}>{t('Aller au contenu')}</a>
+    <div className={'app-frame' + (collapsed ? ' sidebar-collapsed' : '')}>
+      <SidebarNav activeId={route} staff={staff} menu={menu} collapsed={collapsed} profile={data?.profile} onClose={() => { setMenu(false); menuRef.current?.focus(); }} onCollapse={() => setCollapsed(value => !value)} onWorkspaceSelect={value => { setRole(value); location.hash = value === 'staff' ? 'admissions' : 'accueil'; }}/>
+      <div className="shell"><header className="topbar"><button ref={menuRef} id="menu-toggle" className="icon-button mobile-only" aria-label={menu ? t('Fermer la navigation') : t('Ouvrir la navigation')} aria-expanded={menu} aria-controls="sidebar" onClick={() => setMenu(!menu)}><Icon name="menu"/></button><div className="breadcrumb">{t('Mon espace')}<span>/</span><span>{t(routes[route] || 'Page introuvable')}</span></div><div className="prototype-label"><span/>{t('Données publiques & espace démo')}</div></header><main id="main" className={'route-' + route} tabIndex={-1} ref={mainRef}>{page()}</main><footer>{t('Déclic')}<span>{t('Un peu plus clair, un pas à la fois.')}</span><span>{t('Catalogue officiel · Dossiers de démonstration')}</span></footer></div>
+    </div>
+  </>;
 }

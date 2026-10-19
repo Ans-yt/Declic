@@ -1,3 +1,4 @@
+import { LoadingIndicator } from './components/Controls';
 import { useEffect, useState, type DependencyList } from 'react';
 import type { Formation as Programme, FormationDetail, PublicSource } from '../shared/catalogue';
 import { api } from './api';
@@ -19,7 +20,7 @@ export function Source({ source, year }: { source: PublicSource | null; year?: n
   if (!source) return null;
   return <div className="public-source"><div><Icon name="check"/><strong>{tr('Données publiques officielles', 'Official public data')}{year ? ` · ${year}` : ''}</strong></div><p><a href={source.url} target="_blank" rel="noopener noreferrer">{source.publisher}<Icon name="arrow"/></a><span>{source.license}</span><span>{tr('Récupérées le', 'Retrieved on')} {formatDate(source.fetchedAt, { day: 'numeric', month: 'short', year: 'numeric' })}</span>{source.dataUpdatedAt && <span>{tr('Source traitée le', 'Source processed on')} {formatDate(source.dataUpdatedAt, { day: 'numeric', month: 'short', year: 'numeric' })}</span>}</p>{source.stale && <p className="source-stale" role="status">{tr('La source est indisponible. Dernière copie disponible affichée, à la date indiquée ci-dessus.', 'The source is unavailable. Showing the last available copy, retrieved on the date above.')}</p>}</div>;
 }
-export function LoadState({ loading, error, reload }: { loading: boolean; error: string; reload: () => void }) { return loading ? <p className="catalogue-loading" role="status">{tr('Chargement des données officielles…', 'Loading official data…')}</p> : error ? <div className="inline-error" role="alert"><p>{t(error)}</p><button className="button" onClick={reload}>{t('Réessayer')}</button></div> : null; }
+export function LoadState({ loading, error, reload }: { loading: boolean; error: string; reload: () => void }) { return loading ? <div className="catalogue-loading"><LoadingIndicator label={tr('Chargement des données officielles…', 'Loading official data…')}/></div> : error ? <div className="inline-error" role="alert"><p>{t(error)}</p><button className="button" onClick={reload}>{t('Réessayer')}</button></div> : null; }
 export function sector(value: string) { return getLanguage() === 'fr' ? value : ({ Publics: 'Public', Privés: 'Private', 'Privés en contrat avec l’Etat / EESC': 'Private under state contract / EESC' } as Record<string, string>)[value] || value; }
 export function Compare({ ids }: { ids: string[] }) {
   const request = useRemote(() => selection(ids), [ids.join('|')]); const data = request.data;
