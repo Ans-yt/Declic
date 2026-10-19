@@ -1,5 +1,13 @@
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/logo%20assets%20nd%20others/declic-dark-wordmark.png">
+  <img src="assets/logo%20assets%20nd%20others/declic-wordmark.png" alt="Déclic" width="360">
+</picture>
+
 - **Déclic** — a hackathon prototype helping French students explore higher education and education professionals explain admissions decisions and coordinate teaching cover.
-- **Presentation:** [Watch the English launch film](assets/declic-launch-film-en.mp4).
+- **Presentation:** watch the English launch film below.
+
+https://github.com/user-attachments/assets/5911716e-0f48-4c56-95e4-8f1ed4c0d590
+
 - **Project history:** [Changelog](CHANGELOG.md).
 - **Stack:** React, TypeScript, Vite, Tailwind CSS, Node.js, Express and SQLite.
 - **Languages:** French and English; the browser language selects the initial version, and a manual choice is remembered.

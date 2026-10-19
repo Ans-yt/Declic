@@ -39,3 +39,4 @@
 - Added French/English presentation players to the welcome and overview pages, with lazy media loading and recoverable video errors.
 - Rewrote the README, linked the English launch film and documented the full development history.
 - Added regression coverage for persistence, validation, permissions, uploads, scheduling, geography, OCR and bilingual behaviour.
+- Restored the README wordmark with light/dark variants and embedded the English launch film as a GitHub video player.
