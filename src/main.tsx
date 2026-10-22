@@ -14,3 +14,5 @@ import './map.css';
 import './awards-access.css';
 import './interactions.css';
 import './components/ui/dashboard-sidebar.css';
+import './student-review.css';
+import './review-polish.css';

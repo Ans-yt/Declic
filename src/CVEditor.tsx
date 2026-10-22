@@ -1,5 +1,5 @@
 import { t, tr } from "./i18n";
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { AwardsEditor } from './AwardsEditor';
 import type { CV, CVEntry, Profile, Section } from '../shared/models';
 import { Field, Heading, Icon, Placeholder, Sticker, useAction } from './ui';
@@ -29,16 +29,29 @@ export function CVEditor({
   savedCV,
   setCV,
   profile,
-  save
+  save,
+  recovered = false
 }: {
   cv: CV;
   savedCV: CV;
   setCV: (v: CV) => void;
   profile: Profile;
   save: (cv: CV) => Promise<void>;
+  recovered?: boolean;
 }) {
   const [active, setActive] = useState<Tab | null>(null),
     [preview, setPreview] = useState(true);
+  const [mobileView, setMobileView] = useState<'edit' | 'preview'>('edit');
+  const [savedAt, setSavedAt] = useState<string | null>(null);
+  useEffect(() => {
+    function openSection() {
+      const section = location.hash.replace(/^#cv\/?/, '').split('?')[0];
+      if (Object.hasOwn(labels, section)) { setActive(section as Tab); setMobileView('edit'); }
+    }
+    openSection();
+    window.addEventListener('hashchange', openSection);
+    return () => window.removeEventListener('hashchange', openSection);
+  }, []);
   const dirty = JSON.stringify(cv) !== JSON.stringify(savedCV),
     action = useAction();
   const filled = [!!cv.title.trim() && !!cv.about.trim(), ...entryKeys.map(key => cv[key].some(e => e.title.trim())), !!cv.skills.trim(), !!cv.languages.trim(), cv.awards.length > 0].filter(Boolean).length;
@@ -102,16 +115,13 @@ export function CVEditor({
         }]
       })}><Icon name="plus" />{t("Ajouter ")}{key === 'education' ? t('une formation') : key === 'experience' ? t('une expérience') : t('un engagement')}</button></>;
   }
-  return <><Heading title={t("Votre CV, pas à pas.")} action={<button className="button" onClick={() => window.print()}><Icon name="print" />{t("Imprimer / PDF")}</button>}>{t("Remplissez une rubrique à la fois : l’aperçu se met à jour en direct.")}</Heading><div className="cv-command"><div><span className="status-dot" />{dirty ? t('Modifications à enregistrer') : t('Votre brouillon est à jour')}</div><button className="text-link" onClick={() => setPreview(!preview)} aria-expanded={preview} aria-controls="document-preview">{preview ? t('Masquer') : t('Afficher')}{t(" l’aperçu")}<Icon name="file" /></button></div><div className={'cv-workbench cv-kit-workbench' + (preview ? '' : ' no-preview')}><form className="cv-accordion-form" onSubmit={e => {
-        e.preventDefault();
-        void action.run(() => save(cv), t('Votre CV est enregistré et reste disponible après rechargement.'));
-      }}><section className="cv-outline"><div className="cv-progress"><span>{t("Rubriques renseignées : {count} / 7", { count: filled })}</span><span className="cv-progress-bars" aria-hidden="true">{Array.from({
+  return <><Heading title={t("Votre CV, pas à pas.")} action={<button className="button" onClick={() => window.print()}><Icon name="print" />{t("Imprimer / PDF")}</button>}>{t("Remplissez une rubrique à la fois : l’aperçu se met à jour en direct.")}</Heading>{recovered && dirty && <p className="draft-recovery" role="status">{tr('Brouillon récupéré dans cet onglet. Vérifiez votre CV puis enregistrez-le.', 'Draft recovered in this tab. Review your CV, then save it.')}</p>}<div className="cv-command cv-review-command"><div className="cv-save-status" role="status"><span className="status-dot" />{action.busy ? tr('Enregistrement…', 'Saving…') : dirty ? tr('Modifications non enregistrées', 'Unsaved changes') : savedAt ? tr('Enregistré à ', 'Saved at ') + savedAt : tr('CV enregistré', 'CV saved')}</div><div className="cv-mode-switch" role="group" aria-label={tr('Vue du CV', 'CV view')}><button type="button" aria-pressed={mobileView === 'edit'} onClick={() => setMobileView('edit')}>{tr('Modifier', 'Edit')}</button><button type="button" aria-pressed={mobileView === 'preview'} onClick={() => setMobileView('preview')}>{tr('Aperçu', 'Preview')}</button></div><button type="button" className="text-link cv-desktop-preview" onClick={() => setPreview(!preview)} aria-expanded={preview} aria-controls="document-preview">{preview ? t('Masquer') : t('Afficher')}{t(" l’aperçu")}<Icon name="file" /></button><button form="cv-edit-form" className="button" disabled={action.busy || !dirty}><Icon name="check" />{t('Enregistrer mon CV')}</button><div className="cv-save-feedback">{action.feedback}</div></div>{dirty && <p className="draft-explanation">{tr('La récupération du brouillon dans cet onglet dépend du stockage du navigateur. Enregistrez pour conserver ces changements sur le serveur.', 'Draft recovery in this tab depends on browser storage. Save to keep these changes on the server.')}</p>}<div className={'cv-workbench cv-kit-workbench mobile-cv-' + mobileView + (preview ? '' : ' no-preview')}><form id="cv-edit-form" className="cv-accordion-form" onSubmit={event => { event.preventDefault(); void action.run(async () => { await save(cv); setSavedAt(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })); }, tr('Votre CV est enregistré.', 'Your CV has been saved.')); }}><section className="cv-outline"><div className="cv-progress"><span>{t("Rubriques renseignées : {count} / 7", { count: filled })}</span><span className="cv-optional-note">{tr('Complétez les rubriques utiles à votre projet.', 'Complete the sections relevant to your plans.')}</span><span className="cv-progress-bars" aria-hidden="true">{Array.from({
                 length: 7
               }, (_, i) => <i key={i} className={i < filled ? 'filled' : ''} />)}</span></div>{Object.entries(labels).map(([name, label]) => {
             const key = name as Tab,
               open = active === key;
-            return <section className={'cv-outline-section' + (open ? ' expanded' : '')} key={key}><button className="cv-section-trigger" type="button" aria-expanded={open} aria-controls={'cv-edit-' + key} onClick={() => setActive(open ? null : key)}><span><strong>{t(label)}</strong><small>{t(descriptions[key])}</small></span><span className="cv-section-action">{open ? t('Refermer') : t('Modifier')}<Icon name={open ? 'close' : 'arrow'} /></span></button>{!open && summary(key)}<div id={'cv-edit-' + key} hidden={!open} className="cv-section-fields">{open && editor(key)}</div></section>;
-          })}</section><div className="cv-save-row"><button className="button" disabled={action.busy}><Icon name="check" />{action.busy ? t('Enregistrement…') : t('Enregistrer mon CV')}</button><span>{t("Retrouvez votre brouillon à votre prochaine visite.")}</span></div>{action.feedback}</form><aside id="document-preview" className={'document-preview cv-kit-preview' + (preview ? '' : ' preview-off')}><div className="preview-caption"><span>{t("Aperçu de votre CV")}</span><span className="state-label">{t("Brouillon")}</span></div><Sticker name="star" className="cv-kit-sticker" /><CVSheet cv={cv} profile={profile} /><p className="preview-note">{t("Les rubriques vides sont masquées à l’impression.")}</p></aside></div></>;
+            return <section className={'cv-outline-section' + (open ? ' expanded' : '')} key={key}><button className="cv-section-trigger" type="button" aria-expanded={open} aria-controls={'cv-edit-' + key} onClick={() => setActive(open ? null : key)}><span><strong>{t(label)}</strong><small>{t(descriptions[key])}{(['experience', 'engagement', 'awards'] as Tab[]).includes(key) && <span className="cv-optional">{tr(' · Facultatif', ' · Optional')}</span>}</small></span><span className="cv-section-action">{open ? t('Refermer') : t('Modifier')}<Icon name={open ? 'close' : 'arrow'} /></span></button>{!open && summary(key)}<div id={'cv-edit-' + key} hidden={!open} className="cv-section-fields">{open && editor(key)}</div></section>;
+          })}</section></form><aside id="document-preview" className={'document-preview cv-kit-preview' + (preview ? '' : ' preview-off')}><div className="preview-caption"><span>{t("Aperçu de votre CV")}</span><span className="state-label">{t("Brouillon")}</span></div><Sticker name="star" className="cv-kit-sticker" /><CVSheet cv={cv} profile={profile} /><p className="preview-note">{t("Les rubriques vides sont masquées à l’impression.")}</p></aside></div></>;
 }
 function CVSheet({
   cv,

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import L from 'leaflet';
 import Supercluster, { type ClusterProperties } from 'supercluster';
 import type { Feature, Point } from 'geojson';
-import type { Establishment, EstablishmentMap } from '../shared/catalogue';
+import type { CatalogueFilters, Establishment, EstablishmentMap } from '../shared/catalogue';
 import { api } from './api';
 import { getLanguage, formatNumber, formatDate, tr } from './i18n';
 import { Icon } from './ui';
@@ -14,20 +14,21 @@ type Geography = { regions: Boundaries; departments: Boundaries; countries: Coun
 const globe = '<svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="7"/><ellipse cx="10" cy="10" rx="3" ry="7"/><path d="M3 10h14"/></svg>';
 const countryName = (e: MappedEstablishment) => e.country ? (getLanguage()==='fr' ? e.country.fr : e.country.en) : tr('Localisation publiée', 'Published location');
 
-export default function FranceMap({ query, region, onRegion, onInstitution }: { query: string; region: string; onRegion: (v: string) => void; onInstitution: (v: Establishment) => void }) {
+export default function FranceMap({ query, region, filters = {}, onRegion, onInstitution }: { query: string; region: string; filters?: CatalogueFilters; onRegion: (v: string) => void; onInstitution: (v: Establishment) => void }) {
   const container=useRef<HTMLDivElement>(null),mapRef=useRef<L.Map|null>(null),locationRef=useRef<L.LayerGroup|null>(null);
   const [data,setData]=useState<EstablishmentMap|null>(null),[error,setError]=useState(''),[retry,setRetry]=useState(0),[loading,setLoading]=useState(true);
   const [geography,setGeography]=useState<Geography|null>(null),[boundariesError,setBoundariesError]=useState(false);
   const [locating,setLocating]=useState(false),[locationMessage,setLocationMessage]=useState(''),[zoom,setZoom]=useState(5),[activeCountry,setActiveCountry]=useState('');
   const language=getLanguage(),detailed=zoom>=7;
+  const { institution = '', type = '', sector = '', apprenticeship = '' } = filters;
   const callbacks=useRef({onRegion,onInstitution});callbacks.current={onRegion,onInstitution};
   const locationRequest=useRef(0),pendingLocation=useRef<{lat:number;lon:number;region:string}|null>(null);
 
   useEffect(()=>{
     let active=true;const controller=new AbortController();setLoading(true);setError('');setData(null);
-    api<EstablishmentMap>(`/catalogue/map?${new URLSearchParams({q:query,region})}`,'GET',undefined,controller.signal).then(result=>{if(active){setData(result);setLoading(false);}}).catch(()=>{if(active){setError(tr('La carte des établissements est indisponible. La recherche reste accessible ci-dessous.','The establishment map is unavailable. You can still search below.'));setLoading(false);}});
+    api<EstablishmentMap>(`/catalogue/map?${new URLSearchParams({q:query,region,institution,type,sector,apprenticeship})}`,'GET',undefined,controller.signal).then(result=>{if(active){setData(result);setLoading(false);}}).catch(()=>{if(active){setError(tr('La carte des établissements est indisponible. La recherche reste accessible ci-dessous.','The establishment map is unavailable. You can still search below.'));setLoading(false);}});
     return()=>{active=false;controller.abort();};
-  },[query,region,retry]);
+  },[query,region,institution,type,sector,apprenticeship,retry]);
   useEffect(()=>{
     let active=true;setBoundariesError(false);
     Promise.all([loadBoundaries(),loadCountries().catch(()=>null)]).then(([boundaries,countries])=>{if(active)setGeography({...boundaries,countries});}).catch(()=>{if(active)setBoundariesError(true);});
@@ -40,6 +41,7 @@ export default function FranceMap({ query, region, onRegion, onInstitution }: { 
     return [...groups.values()].sort((a,b)=>b.sites.length-a.sites.length);
   },[mapped]);
   const indexes=useMemo(()=>[0,1,2].map(kind=>new Supercluster<PointProperties>({radius:76,maxZoom:20}).load(mapped.filter(e=>(e.uncertain?2:e.abroad?1:0)===kind).map(establishment=>({type:'Feature',geometry:{type:'Point',coordinates:[establishment.lon,establishment.lat]},properties:{establishment}} as Feature<Point,PointProperties>)))),[mapped]);
+  const foreignSiteCount=foreignGroups.reduce((count,group)=>count+group.sites.length,0);
   const uncertainCount=mapped.filter(e=>e.uncertain).length;
   const departmentColors=useMemo(()=>geography?departmentColourIndexes(geography.departments):{},[geography]);
 
@@ -150,7 +152,7 @@ export default function FranceMap({ query, region, onRegion, onInstitution }: { 
     <div className="map-heading"><div><h2>{tr('Une piste, près de vous.','Find your place.')}</h2><p>{tr('Explorez les régions, zoomez sur les départements ou découvrez les campus à l’étranger.','Explore regions, zoom into departments or discover campuses abroad.')}</p></div><button type="button" className="button" disabled={locating} onClick={()=>void locate()}><Icon name="locate"/>{locating?tr('Localisation…','Locating…'):tr('Me localiser','Locate me')}</button></div>
     <div className="map-frame"><div className="france-map" ref={container} role="region" aria-label={tr('Carte interactive : flèches pour déplacer, touches + et − pour zoomer.','Interactive map: arrow keys to pan, + and − keys to zoom.')}/>{activeCountry&&foreignGroups.find(g=>g.key===activeCountry)&&<div className="map-country-context"><Icon name="globe"/>{countryName(foreignGroups.find(g=>g.key===activeCountry)!.sample)}</div>}{detailed&&!activeCountry&&<div className="department-key" aria-hidden="true">{departmentPalette.map(color=><i key={color} style={{background:color}}/>)}<span>{tr('Départements','Departments')}</span></div>}</div>
     <div className="map-bottom"><span><i className="map-legend-dot"/>{tr('Sites en France','Sites in France')}</span>{foreignGroups.length>0&&<span><i className="map-legend-abroad"/>{tr('Campus à l’étranger','Campuses abroad')}</span>}{uncertainCount>0&&<span><i className="map-legend-uncertain"/>{tr('Autres positions publiées','Other published positions')}</span>}{data&&<span>{formatNumber(data.establishments.length)} {tr('sites géolocalisés','geolocated sites')}</span>}<button type="button" className="text-link" onClick={franceView}>{tr('Vue France','France view')}</button></div>
-    {foreignGroups.length>0&&<div className="abroad-destinations"><div><Icon name="globe"/><span>{tr('Aussi à l’étranger','Also abroad')}<small>{tr('Les campus du catalogue, dans leur pays.','Catalogue campuses, shown in their country.')}</small></span></div><div className="country-shortcuts">{foreignGroups.map(group=><button key={group.key} type="button" aria-pressed={activeCountry===group.key} onClick={()=>countryView(group)}>{countryName(group.sample)}<span>{group.sites.length}</span><Icon name="arrow"/></button>)}</div></div>}
+    {foreignGroups.length>0&&<details className="abroad-destinations"><summary><Icon name="globe"/><span>{tr('Campus à l’étranger','Campuses abroad')} · {formatNumber(foreignSiteCount)} {tr('sites dans','sites in')} {formatNumber(foreignGroups.length)} {tr('pays','countries')}</span></summary><p>{tr('Choisissez un pays pour le situer sur la carte. Ces raccourcis conservent votre recherche.','Choose a country to locate it on the map. These shortcuts keep your current search.')}</p><div className="country-shortcuts">{foreignGroups.map(group=><button key={group.key} type="button" aria-pressed={activeCountry===group.key} onClick={()=>countryView(group)}>{countryName(group.sample)}<span>{group.sites.length}</span><Icon name="arrow"/></button>)}</div></details>}
     <div aria-live="polite">{data&&<p className="map-message map-source"><a href={data.source.url} target="_blank" rel="noopener noreferrer">{tr('Catalogue officiel','Official catalogue')} {data.year}</a> · {tr('Récupéré le','Retrieved on')} {formatDate(data.source.fetchedAt,{day:'numeric',month:'short',year:'numeric'})}{data.source.stale&&tr(' · source indisponible, dernière copie affichée',' · source unavailable, showing the last copy')}</p>}{loading&&<p className="map-message">{tr('Chargement des établissements…','Loading establishments…')}</p>}{error&&<p className="map-message">{error} <button className="text-link" onClick={()=>setRetry(v=>v+1)}>{tr('Réessayer','Try again')}</button></p>}{boundariesError&&<p className="map-message">{tr('Les contours n’ont pas pu être chargés.','Boundaries could not be loaded.')} <button className="text-link" onClick={()=>setRetry(v=>v+1)}>{tr('Réessayer','Try again')}</button></p>}{geography&&!geography.countries&&<p className="map-message">{tr('Les contours des pays sont indisponibles.','Country outlines are unavailable.')} <button className="text-link" onClick={()=>setRetry(v=>v+1)}>{tr('Réessayer','Try again')}</button></p>}{data&&!data.establishments.length&&<p className="map-message">{tr('Aucun établissement géolocalisé pour cette recherche.','No geolocated establishments for this search.')}</p>}{data&&data.unmapped>0&&<p className="map-message">{formatNumber(data.unmapped)} {tr('formation(s) sans coordonnées publiées restent accessibles dans la liste.','programme(s) without published coordinates remain accessible in the list.')}</p>}{locationMessage&&<p className="map-message">{locationMessage}</p>}</div>
   </section>;
 }

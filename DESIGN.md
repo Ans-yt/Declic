@@ -19,6 +19,10 @@ typography:
 
 # Déclic — Superr notebook world
 
+## Review refinements — October 2026
+
+The notebook identity is preserved. Mobile welcome places a useful discovery action before illustration. Catalogue results default to a list, with explicit list/map choice, compact expandable provenance and foreign-campus disclosure. Comparison chips use programme/institution names. CV saving is grouped in a sticky command area (below the fixed 65px phone header) with a phone edit/preview switch. Navigation separates preparation and follow-up with one help destination. Secondary control targets grow to 44px; phone form inputs use 16px. Placeholder presentation omits literal asterisks without changing user text. The glass rim and chromatic distortion are quieter. `src/student-review.css` and `src/review-polish.css` load after earlier component styles. Personal planning and backup controls use existing outlined paper controls; professional overview is a restrained linked workload strip, not a new dashboard theme.
+
 The user-supplied Superr reference governs the visual system. Product name remains Déclic. Mode: Operate.
 
 Canvas and controls #fdfbf9; surfaces #f7efe9; text and structural ink #171717; headings #2b1a07; orange #ff6f1e; secondary text #6b5a4e; separators #d2c4b8. Small annotations use #a94008 for readable contrast. Orange belongs to annotations, decorative marks and the footer, with outlined cream CTAs.

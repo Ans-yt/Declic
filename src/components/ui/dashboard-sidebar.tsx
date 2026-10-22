@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState, type ComponentType, type CSSProperties } from 'react';
 import * as Select from '@radix-ui/react-select';
 import * as Dialog from '@radix-ui/react-dialog';
-import { Search, LayoutDashboard, FolderKanban, FileText, Route, ClipboardCheck, Calendar, HelpCircle, School, GraduationCap, ChevronDown, ChevronRight, Check, UserRound, ArrowUpRight, X, Command, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { Search, LayoutDashboard, FolderKanban, FileText, Route, ClipboardCheck, Calendar, HelpCircle, School, GraduationCap, ChevronDown, ChevronRight, Check, UserRound, X, Command, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { t, tr } from '../../i18n';
 
 export type NavItemData = { id: string; title: string; icon: ComponentType<{ size?: number; strokeWidth?: number }>; badge?: string | number; shortcut?: string; children?: NavItemData[] };
@@ -54,8 +54,8 @@ export function SidebarNav({ activeId, staff, menu, collapsed, onWorkspaceSelect
   const [searchOpen, setSearchOpen] = useState(false), [query, setQuery] = useState('');
   const sidebar = useRef<HTMLElement>(null);
   const items = staff ? staffItems : studentItems;
-  const groups: NavGroupData[] = [{ items }, { heading: 'Pour vous accompagner', items: [help] }];
-  const name = [profile?.firstname, profile?.lastname].filter(Boolean).join(' ') || t('*Votre prénom*');
+  const groups: NavGroupData[] = staff ? [{ items }, { items: [help] }] : [{ items: studentItems.slice(0, 2) }, { heading: tr('Préparer', 'Prepare'), items: studentItems.slice(2, 4) }, { heading: tr('Suivre', 'Follow up'), items: studentItems.slice(4) }, { items: [help] }];
+  const name = [profile?.firstname, profile?.lastname].filter(Boolean).join(' ') || tr('Votre profil', 'Your profile');
   useEffect(() => {
     if (!menu) return;
     const previousFocus = document.activeElement as HTMLElement | null;
@@ -102,7 +102,7 @@ export function SidebarNav({ activeId, staff, menu, collapsed, onWorkspaceSelect
         </Dialog.Content></Dialog.Portal>
       </Dialog.Root>
       <nav id="navigation" aria-label={t('Navigation principale')} className="dashboard-navigation">{groups.map((group, index) => <div className="dashboard-nav-group" key={index}>{group.heading && <p className="dashboard-nav-heading">{t(group.heading)}</p>}{group.items.map(item => <NavItem key={item.id} item={item} activeId={activeId === 'formation' || activeId === 'comparer' ? 'formations' : activeId} collapsed={collapsed}/>)}</div>)}</nav>
-      <div className="dashboard-sidebar-footer"><a className="sidebar-help" href="#aide" title={collapsed ? t('Besoin d’un repère ?') : undefined}><HelpCircle size={17}/><span className="sidebar-item-label">{t('Besoin d’un repère ?')}</span><ArrowUpRight size={14}/></a><a className="sidebar-profile" href="#dossier" aria-label={t('Ouvrir mon profil')}><span className="sidebar-profile-avatar"><UserRound size={19}/></span><span className="sidebar-profile-copy"><strong>{name}</strong><small>{profile?.school || t('*Votre établissement*')}</small></span><ChevronRight size={15}/></a></div>
+      <div className="dashboard-sidebar-footer"><a className="sidebar-profile" href="#dossier" aria-label={t('Ouvrir mon profil')}><span className="sidebar-profile-avatar"><UserRound size={19}/></span><span className="sidebar-profile-copy"><strong>{name}</strong><small>{profile?.school || tr('Votre établissement', 'Your institution')}</small></span><ChevronRight size={15}/></a></div>
     </aside>
   </>;
 }

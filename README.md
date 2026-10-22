@@ -15,8 +15,12 @@ https://github.com/user-attachments/assets/5911716e-0f48-4c56-95e4-8f1ed4c0d590
 - **Understand:** programme details include available historical admissions figures, labelled by session and matched to the institution; missing values remain unavailable.
 - **Map:** explore French regions, coloured departments, overseas territories and French campuses abroad, with clustered sites and optional device location.
 - **Profile and CV:** edit seven CV sections, reorder entries, preview changes and print or save an A4 PDF.
+- **Draft recovery:** unsaved profile and CV edits survive navigation and refresh in the same browser tab; the interface distinguishes recovered edits from a saved draft.
+- **Personal planning:** add shortlist notes, questions and personal checklist dates; download calendar reminders. Personal dates are separate from official deadlines.
+- **Backup:** export/import a validated personal JSON backup of profile, CV text, favourites and planning. Uploaded images and professional records are excluded.
 - **Achievements:** add diploma and award images, edit their details and optionally request French/English OCR title suggestions on the device.
 - **Admissions workspace:** create fictional applications, record criteria and evidence, publish explained decisions and answer student clarification requests.
+- **Guided demo:** signed-in professionals can opt into a labelled fictional application scenario; progress follows the actual review, publication and clarification records.
 - **Teaching cover:** manage needs and availabilities, check compatibility and overlapping assignments, confirm or cancel cover and record completed hours.
 - **Interface:** illustrated subject cards, a liquid-glass carousel, pauseable automatic scrolling, keyboard controls, accessible checkboxes and calendars, and searchable collapsible navigation.
 - **Persistence:** profiles, CVs, favourites, uploads and demonstration workflows are saved in isolated visitor workspaces in SQLite.
