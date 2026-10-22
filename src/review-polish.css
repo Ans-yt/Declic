@@ -1,0 +1,51 @@
+/* Review refinements preserve the notebook palette and existing page structure. */
+.language-switch{top:5px;border-radius:26px}
+.language-switch button{width:44px;min-width:44px;height:44px;min-height:44px;flex:0 0 44px;border-radius:22px}
+.language-switch .language-slider{width:44px;border-radius:22px}
+.language-switch[data-language=en] .language-slider{transform:translateX(46px)}
+.language-switch button:focus-visible{outline:2px solid var(--annotation);outline-offset:4px}
+.topbar{padding-right:140px}
+.entry-mode .language-switch{top:24px}
+.favorite-button,.icon-button,.carousel-arrows .icon-button,.presentation-heading>.icon-button,.sidebar-collapse,.sidebar-mobile-close,.navigation-search-input button{width:44px;height:44px;min-width:44px;min-height:44px;flex-shrink:0}
+.favorite-button{border-radius:8px}
+.favorite-button:hover{background:var(--surface)}
+.favorite-button:focus-visible{outline:2px solid var(--annotation);outline-offset:3px}
+.favorite-button:disabled{opacity:.5;cursor:not-allowed}
+.formation .outline-token{max-width:calc(100% - 54px)}
+.comparison-tray>div>button,.country-shortcuts>button,.staff-session button,.cv-entry-heading button,.award-entry .section-heading button{min-height:44px}
+.dashboard-navigation{gap:18px}
+.dashboard-nav-heading{margin-bottom:2px}
+.dashboard-sidebar-footer .sidebar-profile{margin-top:0;border-top:0;padding-top:6px}
+.carousel-current>a{font-weight:600;font-size:14px}
+.carousel-current>a:focus-visible{outline:2px solid var(--annotation);outline-offset:4px;border-radius:4px}
+.home-next>div{min-width:0}
+.home-next{flex-wrap:wrap}
+.home-next .button{max-width:100%}
+.staff-access-help{border-top:1px solid var(--line);padding-top:20px;margin-top:24px}
+.staff-access-help h3{font-size:15px;margin-bottom:7px}
+.staff-access-help p{font-size:13px;margin-bottom:16px}
+details.abroad-destinations{display:block;padding:4px 0}
+.abroad-destinations>summary{display:flex;align-items:center;gap:9px;min-height:44px;font-size:13px;line-height:1.5;color:#345e70;cursor:pointer;list-style:none}
+.abroad-destinations>summary::-webkit-details-marker{display:none}
+.abroad-destinations>summary::after{content:'';width:7px;height:7px;margin:0 4px 3px auto;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:rotate(45deg);flex-shrink:0}
+.abroad-destinations[open]>summary::after{transform:rotate(225deg);margin-top:4px}
+.abroad-destinations>summary>svg{width:18px;height:18px;flex-shrink:0}
+.abroad-destinations>summary:focus-visible{outline:2px solid var(--annotation);outline-offset:3px}
+.abroad-destinations>p{font-size:12px;margin:2px 0 12px}
+.abroad-destinations .country-shortcuts{padding-bottom:12px}
+.france-map .leaflet-control-zoom a{width:44px;height:44px;line-height:44px}
+.france-map .leaflet-popup-close-button{width:44px;height:44px;display:grid;place-items:center}
+.france-map .leaflet-popup-content{margin-right:44px}
+.professional-overview{display:flex;flex-wrap:wrap;gap:0 26px;border-block:1px solid var(--line);padding:10px 0;margin:0 0 24px}
+.professional-overview>a{display:flex;align-items:baseline;gap:8px;min-height:44px;padding:10px 0;font-size:13px;color:var(--cocoa)}
+.professional-overview strong{font-size:18px;font-variant-numeric:tabular-nums}
+.professional-overview>a:hover{text-decoration:underline;text-underline-offset:4px}
+.guided-demo{border-bottom:1px solid var(--line);padding:0 0 18px;margin:0 0 26px}
+.guided-demo>summary{min-height:44px;padding:11px 0;font-weight:600;font-size:14px;cursor:pointer;color:var(--cocoa)}
+.guided-demo p,.guided-demo li{font-size:13px;line-height:1.65}
+.guided-demo ol{padding-left:22px;margin:14px 0 20px}
+.guided-demo li+li{margin-top:5px}
+.guided-demo>p{margin:10px 0 14px}
+.guided-demo>.text-link{display:inline-flex;align-items:center;min-height:44px}
+@media(max-width:700px){.language-switch{top:5px;right:14px}.topbar{padding-right:128px}.entry-mode .language-switch{top:24px}.carousel-current{flex-basis:100%;flex-wrap:wrap}.carousel-current>a{font-size:14px}.carousel-arrows{margin-left:auto}.home-next .button{width:100%}}
+@media(max-width:600px){.field :is(input,textarea,select),.search-field input,.navigation-search-input input,.catalogue-view-options select{font-size:16px}.professional-overview{gap:0 20px}.professional-overview>a{width:100%}.staff-access-help p{font-size:14px}}

@@ -20,7 +20,8 @@ export function normalizeFormation(r: Record<string, unknown>): Formation {
   if (!Number.isInteger(year) || !/^\d+$/.test(code) || !str(r.etab_uai) || !arr(r.nm).length) throw new PublicDataError();
   const gps = typeof r.etab_gps === 'object' && r.etab_gps ? r.etab_gps as Record<string, unknown> : {};
   const lat = number(gps.lat), lon = number(gps.lon);
-  return { id: `${year}:${code}`, year, code, institutionCode: str(r.etab_uai), name: arr(r.nm).join(' / '), institution: str(r.etab_nom), types: arr(r.tf), fields: arr(r.fl), city: str(r.commune), region: str(r.region), department: str(r.departement), sector: str(r.tc), apprenticeship: arr(r.app).some(v => /^Formations en apprentissage$/i.test(v.trim())), attendance: arr(r.amg), officialUrl: safeUrl(r.fiche, true), website: safeUrl(r.etab_url), coordinates: lat !== null && lon !== null ? { lat, lon } : null };
+  const apprenticeshipStatus = arr(r.app).includes('Formations en apprentissage') ? 'yes' : null;
+  return { id: `${year}:${code}`, year, code, institutionCode: str(r.etab_uai), name: arr(r.nm).join(' / '), institution: str(r.etab_nom), types: arr(r.tf), fields: arr(r.fl), city: str(r.commune), region: str(r.region), department: str(r.departement), sector: str(r.tc), apprenticeship: arr(r.app).some(v => /^Formations en apprentissage$/i.test(v.trim())), apprenticeshipStatus, attendance: arr(r.amg), officialUrl: safeUrl(r.fiche, true), website: safeUrl(r.etab_url), coordinates: lat !== null && lon !== null ? { lat, lon } : null };
 }
 type Cached<T> = { body: T; fetchedAt: string; stale: boolean };
 export function createCatalogue(db: DatabaseSync, fetcher: typeof fetch = fetch) {
@@ -102,6 +103,16 @@ export function createCatalogue(db: DatabaseSync, fetcher: typeof fetch = fetch)
     }
   };
 }
-function conditions(year: number, words: string, filters: CatalogueFilters) {
-  return `annee=${quote(String(year))}` + (words ? ` AND (search(nm, ${quote(words)}) OR search(etab_nom, ${quote(words)}) OR search(commune, ${quote(words)}) OR search(region, ${quote(words)}))` : '') + (filters.region ? ` AND region=${quote(filters.region)}` : '') + (filters.institution ? ` AND etab_uai=${quote(filters.institution)}` : '');
+export function conditions(year: number, words: string, filters: CatalogueFilters) {
+  const parts = [`annee=${quote(String(year))}`];
+  if (words) parts.push(`(search(nm, ${quote(words)}) OR search(etab_nom, ${quote(words)}) OR search(commune, ${quote(words)}) OR search(region, ${quote(words)}))`);
+  if (filters.region) parts.push(`region=${quote(filters.region)}`);
+  if (filters.institution) parts.push(`etab_uai=${quote(filters.institution)}`);
+  if (filters.type) parts.push(`search(tf, ${quote(filters.type)})`);
+  if (filters.sector === 'public') parts.push('tc="Publics"');
+  if (filters.sector === 'private') parts.push('(tc="Privés" OR tc="Privés en contrat avec l’Etat / EESC")');
+  if (filters.apprenticeship === 'yes') parts.push('app="Formations en apprentissage"');
+  // Missing apprenticeship data is unknown, never a negative answer.
+  if (filters.apprenticeship === 'no') parts.push('(app IS NOT NULL AND app!="Formations en apprentissage")');
+  return parts.join(' AND ');
 }

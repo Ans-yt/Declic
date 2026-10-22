@@ -41,7 +41,7 @@ export function Placeholder({
 }: {
   children: ReactNode;
 }) {
-  return <span className="placeholder">*{children}*</span>;
+  return <span className="placeholder">{typeof children === 'string' ? children.replace(/^\*|\*$/g, '').trim() : children}</span>;
 }
 export function Heading({
   title,
@@ -76,7 +76,8 @@ export function Field({
   multiline?: boolean;
 } & Omit<InputHTMLAttributes<HTMLInputElement>, 'onChange' | 'value'>) {
   const id = useId();
-  return <label className="field" htmlFor={id}>{t(label)}{multiline ? <textarea id={id} value={value} onChange={e => onChange(e.target.value)} rows={4} maxLength={6000} placeholder={props.placeholder ? t(props.placeholder) : undefined} required={props.required} /> : props.type === 'date' ? <DateInput {...props} id={id} value={value} onValueChange={onChange}/> : <input id={id} value={value} onChange={e => onChange(e.target.value)} maxLength={300} {...props} placeholder={props.placeholder ? t(props.placeholder) : undefined} />}</label>;
+  const placeholder = props.placeholder ? t(props.placeholder).replace(/^\*|\*$/g, '').trim() : undefined;
+  return <label className="field" htmlFor={id}>{t(label)}{multiline ? <textarea id={id} value={value} onChange={e => onChange(e.target.value)} rows={4} maxLength={6000} placeholder={placeholder} required={props.required} /> : props.type === 'date' ? <DateInput {...props} id={id} value={value} onValueChange={onChange}/> : <input id={id} value={value} onChange={e => onChange(e.target.value)} maxLength={300} {...props} placeholder={placeholder} />}</label>;
 }
 export function Empty({
   title,

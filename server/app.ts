@@ -7,7 +7,7 @@ import { createCatalogue, PublicDataError } from './catalogue.js';
 import { installAuth, requireStaff, workspaceContext, workspaceId } from './auth.js';
 import { readConfig, type AppConfig } from './config.js';
 import { installAttachments } from './attachments.js';
-import { applicationSchema, blankCV, blankProfile, candidateSchema, cvSchema, hoursSchema, needSchema, profileSchema, reviewSchema, type Application, type Candidate, type Need, type Workspace } from '../shared/models.js';
+import { applicationSchema, backupSchema, blankCV, blankPlanner, blankProfile, candidateSchema, cvSchema, hoursSchema, needSchema, plannerSchema, profileSchema, reviewSchema, savedSchema, type Application, type Candidate, type Need, type Workspace } from '../shared/models.js';
 
 class HttpError extends Error { constructor(public status: number, message: string) { super(message); } }
 const normal = (v: string) => v.trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('fr');
@@ -36,7 +36,7 @@ export function createApp(dbPath: string, options: { fetcher?: typeof fetch; con
   function put(table: Table, entity: { id: string }) { db.prepare(`INSERT INTO ${table} (id,body,workspace) VALUES (?,?,?) ON CONFLICT(id) DO UPDATE SET body=excluded.body WHERE workspace=excluded.workspace`).run(entity.id, JSON.stringify(entity), workspaceId()); }
   function setting<T>(key: string, fallback: T): T { const row = db.prepare('SELECT body FROM scoped_settings WHERE workspace=? AND key=?').get(workspaceId(), key) as { body: string } | undefined; return row ? JSON.parse(row.body) as T : fallback; }
   function set(key: string, value: unknown) { db.prepare('INSERT INTO scoped_settings (workspace,key,body) VALUES (?,?,?) ON CONFLICT(workspace,key) DO UPDATE SET body=excluded.body').run(workspaceId(), key, JSON.stringify(value)); }
-  function workspace(): Workspace { const staff = workspaceContext.getStore()?.staff; return { profile: setting('profile', blankProfile), cv: cvSchema.parse(setting('cv', blankCV)), saved: setting<unknown[]>('saved', []).filter((id): id is string => typeof id === 'string' && /^\d{4}:\d+$/.test(id)), applications: list<Application>('applications').map(a => staff || a.status === 'published' ? a : { ...a, review: null }), candidates: staff ? list('candidates') : [], needs: staff ? list('needs') : [] }; }
+  function workspace(): Workspace { const staff = workspaceContext.getStore()?.staff; return { profile: setting('profile', blankProfile), cv: cvSchema.parse(setting('cv', blankCV)), saved: setting<unknown[]>('saved', []).filter((id): id is string => typeof id === 'string' && /^\d{4}:\d+$/.test(id)), applications: list<Application>('applications').map(a => staff || a.status === 'published' ? a : { ...a, review: null }), candidates: staff ? list('candidates') : [], needs: staff ? list('needs') : [], planner: plannerSchema.parse(setting('planner', blankPlanner)), draftKey: workspaceId(), demoApplicationId: setting('demoApplicationId', null) }; }
   function compatible(need: Need, candidate: Candidate) {
     return candidate.verified && normal(candidate.subject) === normal(need.subject) && normal(candidate.city) === normal(need.city) && candidate.date === need.date && candidate.start <= need.start && candidate.end >= need.end && !list<Need>('needs').some(n => n.id !== need.id && n.candidateId === candidate.id && ['confirmed', 'completed'].includes(n.status) && n.date === need.date && n.start < need.end && n.end > need.start);
   }
@@ -53,10 +53,11 @@ export function createApp(dbPath: string, options: { fetcher?: typeof fetch; con
     if (req.path === '/attachments' && req.method === 'POST' && !req.is('multipart/form-data')) return res.status(415).json({ error: 'Choisissez une image PNG, JPEG ou WebP.' });
     next();
   });
+  app.use('/api/backup', express.json({ limit: '1mb' }));
   app.use(express.json({ limit: '256kb' }));
   installAuth(app, db, config);
   installAttachments(app, db);
-  const filters = { q: z.string().max(100).default(''), region: z.string().max(100).default(''), institution: z.string().regex(/^[A-Za-z0-9]*$/).max(12).default('') };
+  const filters = { q: z.string().max(100).default(''), region: z.string().max(100).default(''), institution: z.string().regex(/^[A-Za-z0-9]*$/).max(12).default(''), type: z.string().max(100).default(''), sector: z.enum(['', 'public', 'private']).default(''), apprenticeship: z.enum(['', 'yes', 'no']).default('') };
   app.get('/api/health', (_req, res) => res.json({ ok: true, storage: 'sqlite', mode: 'isolated-demo' }));
   app.get('/api/catalogue/map', async (req,res) => { const input = z.object(filters).parse(req.query); res.json(await catalogue.map(input.q,input)); });
   app.get('/api/catalogue', async (req,res) => { const input = z.object({ ...filters, page: z.coerce.number().int().min(1).max(416).default(1) }).parse(req.query); res.json(await catalogue.list(input.q, input.page,input)); });
@@ -70,7 +71,30 @@ export function createApp(dbPath: string, options: { fetcher?: typeof fetch; con
     try { set('cv', cv); for(const award of previous.awards) if(award.attachmentId && !cv.awards.some(a => a.attachmentId === award.attachmentId)) db.prepare('DELETE FROM attachments WHERE id=? AND workspace=?').run(award.attachmentId,workspaceId()); db.exec('COMMIT'); } catch(e) { db.exec('ROLLBACK'); throw e; }
     res.json(workspace());
   });
-  app.put('/api/saved', (req, res) => { set('saved', z.array(z.string().regex(/^\d{4}:\d+$/)).max(100).parse(req.body)); res.json(workspace()); });
+  app.put('/api/saved', (req, res) => { set('saved', savedSchema.parse(req.body)); res.json(workspace()); });
+  app.put('/api/planner', (req, res) => { set('planner', plannerSchema.parse(req.body)); res.json(workspace()); });
+  app.get('/api/backup', (_req, res) => {
+    const data = workspace();
+    res.json({ format: 'declic-personal-backup', version: 1, profile: data.profile, cv: { ...data.cv, awards: data.cv.awards.map(a => ({ ...a, attachmentId: null })) }, saved: data.saved, planner: data.planner });
+  });
+  app.post('/api/backup', (req, res) => {
+    const input = backupSchema.parse(req.body);
+    db.exec('BEGIN IMMEDIATE');
+    try { set('profile', input.profile); set('cv', input.cv); set('saved', input.saved); set('planner', input.planner); db.exec('COMMIT'); }
+    catch (error) { db.exec('ROLLBACK'); throw error; }
+    res.json(workspace());
+  });
+  app.post('/api/demo/scenario', requireStaff, (req, res) => {
+    const { language } = z.object({ language: z.enum(['fr', 'en']) }).parse(req.body);
+    const existing = setting<string | null>('demoApplicationId', null);
+    if (existing && list<Application>('applications').some(a => a.id === existing)) return res.json(workspace());
+    const now = new Date().toISOString(), id = randomUUID(), english = language === 'en';
+    const record: Application = { id, reference: 'DEMO-' + id.slice(0, 8).toUpperCase(), formation: english ? 'Fictional programme — guided demo' : 'Formation fictive — parcours guidé', summary: english ? 'Fictional student: a group science project and volunteer tutoring. Suggested criterion: ability to explain an approach. Review the evidence, write an explanation, save, then share a response. No real application or candidate is involved.' : 'Élève fictif : projet scientifique en groupe et tutorat bénévole. Critère suggéré : expliquer une démarche. Examinez les éléments, rédigez votre explication, enregistrez puis partagez une réponse. Aucun candidat ni dossier réel.', status: 'pending', review: null, questions: [], createdAt: now, updatedAt: now };
+    db.exec('BEGIN IMMEDIATE');
+    try { put('applications', record); set('demoApplicationId', id); db.exec('COMMIT'); }
+    catch (error) { db.exec('ROLLBACK'); throw error; }
+    res.status(201).json(workspace());
+  });
   app.use('/api', (req,res,next) => {
     const guarded = /^\/(needs|candidates)(\/|$)/.test(req.path) || req.path === '/applications' && req.method === 'POST' || /^\/applications\/[^/]+\/(review|publish)(\/|$)/.test(req.path) || /^\/applications\/[^/]+\/questions\/[^/]+$/.test(req.path);
     return guarded ? requireStaff(req,res,next) : next();

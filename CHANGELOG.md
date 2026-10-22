@@ -40,3 +40,10 @@
 - Rewrote the README, linked the English launch film and documented the full development history.
 - Added regression coverage for persistence, validation, permissions, uploads, scheduling, geography, OCR and bilingual behaviour.
 - Restored and centred the preferred README wordmark in both themes and embedded the English launch film as a GitHub video player.
+- Protected profile and CV drafts across navigation and refresh, with visitor-scoped recovery and clear save status.
+- Preserved catalogue searches and comparison selections; replaced comparison codes with programme names.
+- Added diploma, sector and apprenticeship filters, personal shortlist notes, task dates and calendar export.
+- Added validated personal backup export/import, excluding uploaded images and protected professional records.
+- Added an opt-in fictional admissions walkthrough and professional workload links based on actual workspace counts.
+- Improved mobile entry, list/map hierarchy, CV preview/save access, empty states, navigation grouping and touch targets.
+- Completed source-linked waiting-list help, corrected CV next-step guidance and softened the liquid-glass effect.

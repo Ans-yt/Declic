@@ -1,8 +1,11 @@
 import { LoadingIndicator } from './components/Controls';
 import { SidebarNav } from './components/ui/dashboard-sidebar';
-import { t, useLanguage, setLanguage } from "./i18n";
+import { t, tr, useLanguage, setLanguage } from "./i18n";
 import { useEffect, useRef, useState } from 'react';
-import { blankCV, type CV, type Workspace } from '../shared/models';
+import { cvDraftSchema, profileDraftSchema, type Workspace } from '../shared/models';
+import { useRecoverableDraft } from './lib/drafts';
+import { useComparison } from './lib/comparison';
+import { ProfessionalOverview, GuidedDemo } from './ProfessionalOverview';
 import { api } from './api';
 import { Home } from './Home';
 import { Decisions } from './Decisions';
@@ -29,40 +32,42 @@ const routes: Record<string, string> = {
   formation: 'Fiche formation',
   comparer: 'Comparer les formations'
 };
-const currentRoute = () => location.hash.slice(1).split('/')[0] || 'connexion';
+const currentRoute = () => location.hash.slice(1).split('?')[0].split('/')[0] || 'connexion';
 export default function App() {
+  const [loaded, setLoaded] = useState<{data: Workspace; auth: AuthState} | null>(null);
+  const [error, setError] = useState(''), [revision, setRevision] = useState(0), [backupRestored, setBackupRestored] = useState(false);
+  useLanguage();
+  async function load() {
+    setError('');
+    try { const [data, auth] = await Promise.all([api('/workspace'), api<AuthState>('/auth/session')]); setLoaded({data,auth}); setRevision(v => v + 1); }
+    catch (e) { setError(e instanceof Error ? e.message : t('Le serveur ne répond pas.')); }
+  }
+  useEffect(() => { void load(); }, []);
+  if (error) return <main className="screen-error"><h1>{t('Retrouvons votre espace.')}</h1><p role="alert">{error}</p><button className="button" onClick={() => void load()}>{t('Réessayer')}</button></main>;
+  if (!loaded) return <main className="app-loading"><LoadingIndicator label={t('Chargement de votre espace…')}/></main>;
+  return <WorkspaceApp key={loaded.data.draftKey + ':' + revision} initialData={loaded.data} initialAuth={loaded.auth} backupRestored={backupRestored} reload={async () => { await load(); setBackupRestored(true); }}/>;
+}
+function WorkspaceApp({initialData, initialAuth, reload, backupRestored}: {initialData: Workspace; initialAuth: AuthState; reload:()=>Promise<void>; backupRestored:boolean}) {
   const language = useLanguage();
   const [route, setRoute] = useState(currentRoute),
     [role, setRole] = useState('student'),
     [menu, setMenu] = useState(false),
     [collapsed, setCollapsed] = useState(false),
-    [data, setData] = useState<Workspace | null>(null),
-    [error, setError] = useState(''),
-    [cv, setCV] = useState<CV>(blankCV),
-    [compared, setCompared] = useState<string[]>([]);
-  const [auth, setAuth] = useState<AuthState | null>(null);
+    [data, setData] = useState<Workspace>(initialData);
+  const profileDraft = useRecoverableDraft('declic:profile:' + data.draftKey, data.profile, value => { const parsed = profileDraftSchema.safeParse(value); return parsed.success ? parsed.data : null; });
+  const cvDraft = useRecoverableDraft('declic:cv:' + data.draftKey, data.cv, value => { const parsed = cvDraftSchema.safeParse(value); return parsed.success ? parsed.data : null; });
+  const cv = cvDraft.draft, setCV = cvDraft.setDraft;
+  const [compared, setCompared] = useComparison(data.draftKey);
+  const [auth, setAuth] = useState<AuthState | null>(initialAuth);
   const mainRef = useRef<HTMLElement>(null),
     menuRef = useRef<HTMLButtonElement>(null);
-  async function load() {
-    setError('');
-    try {
-      const workspace = await api('/workspace');
-      const session = await api<AuthState>('/auth/session');
-      setAuth(session);
-      setData(workspace);
-      setCV(workspace.cv);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : t('Le serveur ne répond pas.'));
-    }
-  }
   useEffect(() => {
-    void load();
     const change = () => {
       setRoute(currentRoute());
       setMenu(false);
       requestAnimationFrame(() => {
         mainRef.current?.focus();
-        window.scrollTo(0, 0);
+        if (currentRoute() !== 'formations') window.scrollTo(0, 0);
       });
     };
     window.addEventListener('hashchange', change);
@@ -86,13 +91,13 @@ export default function App() {
   }, [menu]);
   useEffect(() => {
     const warn = (event: BeforeUnloadEvent) => {
-      if (data && JSON.stringify(cv) !== JSON.stringify(data.cv)) {
+      if (cvDraft.dirty || profileDraft.dirty) {
         event.preventDefault();
       }
     };
     window.addEventListener('beforeunload', warn);
     return () => window.removeEventListener('beforeunload', warn);
-  }, [cv, data]);
+  }, [cvDraft.dirty, profileDraft.dirty]);
   async function refreshAuth() { const [session, workspace] = await Promise.all([api<AuthState>('/auth/session'), api('/workspace')]); setAuth(session); setData(workspace); }
   useEffect(() => { const required = () => { setAuth(a => a ? { ...a, staff: null } : a); }; window.addEventListener('declic:authrequired', required); return () => window.removeEventListener('declic:authrequired', required); }, []);
   async function mutate(path: string, body: unknown, method = 'POST') {
@@ -101,19 +106,17 @@ export default function App() {
   }
   const staff = ['admissions', 'remplacements'].includes(route) || route === 'aide' && role === 'staff';
   function page() {
-    if (error) return <section className="screen-error" role="alert"><h1>{t("Retrouvons votre espace.")}</h1><p>{error}</p><button className="button" onClick={() => void load()}>{t("Réessayer")}</button></section>;
-    if (!data) return <div className="app-loading"><LoadingIndicator label={t("Chargement de votre espace…")}/></div>;
     switch (route) {
       case 'connexion':
         return <Welcome data={data} mutate={mutate} setCV={setCV} />;
       case 'accueil':
         return <Home cv={cv} />;
       case 'cv':
-        return <CVEditor cv={cv} savedCV={data.cv} setCV={setCV} profile={data.profile} save={v => mutate('/cv', v, 'PUT')} />;
+        return <CVEditor cv={cv} savedCV={data.cv} setCV={setCV} profile={data.profile} recovered={cvDraft.recovered} save={v => mutate('/cv', v, 'PUT')} />;
       case 'dossier':
-        return <ProfilePage profile={data.profile} save={v => mutate('/profile', v, 'PUT')} />;
+        return <>{backupRestored && <p className="draft-recovery" role="status">{tr('Sauvegarde importée. Votre espace personnel a été restauré ; les données professionnelles sont conservées.', 'Backup imported. Your personal workspace has been restored; professional records are unchanged.')}</p>}<ProfilePage profile={data.profile} draft={profileDraft.draft} setDraft={profileDraft.setDraft} recovered={profileDraft.recovered} hasUnsavedWork={profileDraft.dirty || cvDraft.dirty} onBackupImported={async () => {profileDraft.clearDraft(); cvDraft.clearDraft(); await reload();}} save={v => mutate('/profile', v, 'PUT')} /></>;
       case 'formations':
-        return <Formations saved={data.saved} mutate={mutate} compared={compared} setCompared={setCompared} />;
+        return <Formations saved={data.saved} planner={data.planner} mutate={mutate} compared={compared} setCompared={setCompared} />;
       case 'formation':
         return <Formation />;
       case 'comparer':
@@ -123,9 +126,9 @@ export default function App() {
       case 'decisions':
         return <Decisions applications={data.applications} mutate={mutate} />;
       case 'admissions':
-        return <StaffAccess auth={auth} refresh={refreshAuth}><Admissions applications={data.applications} mutate={mutate} /></StaffAccess>;
+        return <StaffAccess auth={auth} refresh={refreshAuth}><ProfessionalOverview data={data}/><GuidedDemo data={data} mutate={mutate}/><Admissions applications={data.applications} mutate={mutate} /></StaffAccess>;
       case 'remplacements':
-        return <StaffAccess auth={auth} refresh={refreshAuth}><Replacements needs={data.needs} candidates={data.candidates} mutate={mutate} /></StaffAccess>;
+        return <StaffAccess auth={auth} refresh={refreshAuth}><ProfessionalOverview data={data}/><Replacements needs={data.needs} candidates={data.candidates} mutate={mutate} /></StaffAccess>;
       case 'aide':
         return <Help />;
       default:
