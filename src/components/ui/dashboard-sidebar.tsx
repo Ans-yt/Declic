@@ -2,14 +2,14 @@
 import { useEffect, useRef, useState, type ComponentType, type CSSProperties } from 'react';
 import * as Select from '@radix-ui/react-select';
 import * as Dialog from '@radix-ui/react-dialog';
-import { Search, LayoutDashboard, FolderKanban, FileText, Route, ClipboardCheck, Calendar, HelpCircle, School, GraduationCap, ChevronDown, ChevronRight, Check, UserRound, X, Command, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { Search, BookOpen, LayoutDashboard, FolderKanban, FileText, Route, ClipboardCheck, Calendar, HelpCircle, School, GraduationCap, ChevronDown, ChevronRight, Check, UserRound, X, Command, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { t, tr } from '../../i18n';
 
 export type NavItemData = { id: string; title: string; icon: ComponentType<{ size?: number; strokeWidth?: number }>; badge?: string | number; shortcut?: string; children?: NavItemData[] };
 export type NavGroupData = { heading?: string; items: NavItemData[] };
 const studentItems: NavItemData[] = [
   { id: 'accueil', title: 'Vue d’ensemble', icon: LayoutDashboard },
-  { id: 'formations', title: 'Les formations', icon: Search },
+  { id: 'formations', title: 'Les formations', icon: BookOpen },
   { id: 'dossier', title: 'Mon dossier', icon: FolderKanban },
   { id: 'cv', title: 'Mon CV', icon: FileText },
   { id: 'suivi', title: 'Mes candidatures', icon: Route },

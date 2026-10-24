@@ -1,6 +1,7 @@
 import { t, tr } from "./i18n";
 import { BackupControls } from './BackupControls';
 import { Checkbox } from './components/ui/checkbox';
+import { Button04 } from './components/ui/animated-arrow-button';
 import { PresentationFilm } from './components/PresentationFilm';
 import { useEffect, useState } from 'react';
 import { outcomeLabels, type Application, type CV, type Profile, type Workspace } from '../shared/models';
@@ -82,7 +83,7 @@ export function ProfilePage({ profile, save, draft, setDraft, recovered = false,
       <Field label={t("Ce qui vous intéresse")} multiline value={form.interests} onChange={value => setForm({ ...form, interests: value })} placeholder={tr('Vos envies, vos matières et vos domaines d’intérêt', 'Your interests, subjects and areas you want to explore')} />
       <div className="profile-save-controls"><p role="status">{a.busy ? tr('Enregistrement…', 'Saving…') : dirty ? tr('Modifications non enregistrées', 'Unsaved changes') : savedAt ? tr('Enregistré à ', 'Saved at ') + savedAt : tr('Dossier enregistré', 'Profile saved')}</p><button className="button" disabled={a.busy || !dirty}><Icon name="check" />{t("Enregistrer mon dossier")}</button></div>
       {dirty && <p className="draft-explanation">{tr('Votre brouillon reste dans cet onglet pendant la navigation. La récupération après rechargement dépend du stockage du navigateur. Enregistrez pour mettre à jour les informations utilisées dans votre CV.', 'Your draft stays in this tab as you navigate. Recovery after refresh depends on browser storage. Save to update the information used in your CV.')}</p>}{a.feedback}
-    </form><aside className="note"><Icon name="file" /><h3>{t("Votre parcours a des choses à dire.")}</h3><p>{t("Vos expériences, vos projets et vos engagements trouvent leur place dans votre CV.")}</p><LinkButton to="cv">{t("Construire mon CV")}</LinkButton></aside></div>
+    </form><aside className="note"><Icon name="file" /><h3>{t("Votre parcours a des choses à dire.")}</h3><p>{t("Vos expériences, vos projets et vos engagements trouvent leur place dans votre CV.")}</p><Button04 href="#cv" text={t("Construire mon CV")} /></aside></div>
     <section className="section-space documents-empty"><h2>{t("Les pièces du dossier")}</h2><p>{tr('Aucun dépôt de document n’est connecté à un établissement dans cette démonstration. Consultez les pièces demandées et les consignes dans votre dossier officiel Parcoursup ou sur le site de la formation.', 'Document submission is not connected to an institution in this demonstration. Check required documents and instructions in your official Parcoursup application or on the programme website.')}</p><p>{tr('Vous pouvez préparer votre profil et votre CV ici. Les images ajoutées aux récompenses du CV restent des pièces de démonstration et ne sont pas transmises.', 'You can prepare your profile and CV here. Images added to CV awards remain demonstration attachments and are not submitted.')}</p><a className="text-link" href="https://www.parcoursup.gouv.fr/" target="_blank" rel="noreferrer">{tr('Ouvrir le site officiel Parcoursup', 'Open the official Parcoursup website')}<Icon name="arrow" /></a></section>
     <BackupControls onImported={onBackupImported} hasUnsavedWork={hasUnsavedWork || dirty} />
   </>;

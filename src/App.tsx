@@ -8,6 +8,7 @@ import { useComparison } from './lib/comparison';
 import { ProfessionalOverview, GuidedDemo } from './ProfessionalOverview';
 import { api } from './api';
 import { Home } from './Home';
+import { NotFound } from './NotFound';
 import { Decisions } from './Decisions';
 import { Compare, Formation } from './FormationExplorer';
 import { Formations } from './FormationsPage';
@@ -132,7 +133,7 @@ function WorkspaceApp({initialData, initialAuth, reload, backupRestored}: {initi
       case 'aide':
         return <Help />;
       default:
-        return <section className="screen-error"><h1>{t("Cette page reste à trouver.")}</h1><a className="button" href="#accueil">{t("Retour à l’accueil")}</a></section>;
+        return <NotFound />;
     }
   }
   return <>

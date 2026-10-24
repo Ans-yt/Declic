@@ -1,0 +1,148 @@
+/* Animated 404 empty state, adapted to Déclic's notebook palette. */
+.not-found{
+  position:relative;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  min-height:calc(100vh - 250px);
+  padding:clamp(30px,5vw,64px) 0;
+  overflow:hidden;
+}
+.not-found-glow{
+  position:absolute;
+  width:min(620px,86vw);
+  aspect-ratio:1;
+  border-radius:50%;
+  background:radial-gradient(circle,rgba(255,111,30,.13) 0%,rgba(255,214,189,.1) 38%,transparent 70%);
+  filter:blur(14px);
+  pointer-events:none;
+}
+.not-found-inner{
+  position:relative;
+  z-index:1;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  width:100%;
+  max-width:840px;
+  text-align:center;
+}
+.not-found-hero{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:clamp(8px,2.2vw,28px);
+  width:100%;
+  margin-bottom:clamp(8px,1.5vw,20px);
+}
+.not-found-fan{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:5px;
+  padding:4px;
+  border:0;
+  border-radius:16px;
+  background:transparent;
+  color:var(--cocoa);
+  cursor:pointer;
+  outline:none;
+  user-select:none;
+  touch-action:manipulation;
+}
+.not-found .not-found-fan svg{
+  display:block;
+  width:clamp(58px,9vw,104px);
+  height:auto;
+  transform:perspective(220px) rotateY(32deg);
+  filter:drop-shadow(0 6px 10px rgba(43,26,7,.08));
+  transition:transform .45s var(--ease);
+}
+.not-found-fan:hover svg{
+  transform:perspective(220px) rotateY(24deg) rotate(-4deg);
+}
+.not-found-fan:focus-visible{
+  outline:3px solid var(--orange);
+  outline-offset:4px;
+}
+.not-found-fan-state{
+  font-family:"Segoe UI",Arial,sans-serif;
+  font-size:10px;
+  font-weight:700;
+  letter-spacing:.18em;
+  color:#b4402a;
+  transition:color .35s;
+}
+.not-found-fan-state[data-on="true"]{
+  color:#2f7d4f;
+}
+.not-found .not-found-word{
+  display:block;
+  width:clamp(190px,30vw,320px);
+  height:auto;
+  max-height:60vh;
+  overflow:visible;
+  color:var(--cocoa);
+  fill:currentColor;
+  stroke:none;
+}
+.not-found .not-found-word text{
+  font-family:"Segoe UI",Arial,sans-serif;
+  font-size:180px;
+  font-weight:900;
+  letter-spacing:-.04em;
+  fill:currentColor;
+  stroke:none;
+  user-select:none;
+}
+.not-found h1{
+  max-width:20ch;
+  margin:0;
+  color:var(--cocoa);
+  font-family:var(--display);
+  font-size:clamp(26px,3.2vw,42px);
+  font-weight:600;
+  line-height:1.16;
+  letter-spacing:normal;
+  text-transform:none;
+}
+.not-found p{
+  max-width:56ch;
+  margin:18px auto 0;
+  color:var(--muted);
+  font-size:clamp(14px,1.3vw,16px);
+  line-height:1.65;
+}
+.not-found-home{
+  min-height:46px;
+  margin-top:clamp(24px,3.5vw,38px);
+  padding-inline:22px;
+}
+@media(max-width:600px){
+  .not-found{
+    min-height:calc(100vh - 190px);
+    padding:28px 0 36px;
+  }
+  .not-found-hero{
+    gap:6px;
+  }
+  .not-found .not-found-fan svg{
+    width:54px;
+  }
+  .not-found .not-found-word{
+    width:min(52vw,250px);
+  }
+  .not-found h1{
+    max-width:18ch;
+    font-size:27px;
+  }
+  .not-found p{
+    font-size:14px;
+  }
+}
+@media(prefers-reduced-motion:reduce){
+  .not-found-fan svg,
+  .not-found-fan-state{
+    transition:none!important;
+  }
+}

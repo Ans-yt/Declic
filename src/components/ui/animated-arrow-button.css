@@ -1,0 +1,120 @@
+/* Animated dotted-arrow action, adapted from the supplied Button04 markup. */
+.button04{
+  position:relative;
+  display:inline-flex;
+  align-items:center;
+  min-height:48px;
+  padding:0 11px 0 18px;
+  border:1px solid var(--cocoa);
+  border-radius:12px;
+  background:var(--cocoa);
+  color:var(--paper);
+  text-decoration:none;
+  overflow:hidden;
+  isolation:isolate;
+  -webkit-tap-highlight-color:transparent;
+  transition:transform .35s var(--ease),box-shadow .35s var(--ease),border-color .35s var(--ease);
+}
+.button04_bg{
+  position:absolute;
+  inset:0;
+  z-index:-1;
+  background:radial-gradient(130% 180% at 12% 130%,#ff8a4c 0%,rgba(255,111,30,.55) 34%,transparent 68%);
+  opacity:0;
+  transition:opacity .42s var(--ease);
+}
+.button04_inner{
+  position:relative;
+  display:inline-flex;
+  align-items:center;
+  gap:13px;
+}
+.button04_text{
+  font-size:12px;
+  font-weight:650;
+  line-height:1;
+  letter-spacing:.075em;
+  text-transform:uppercase;
+  white-space:nowrap;
+}
+.button04_icon-wrap{
+  position:relative;
+  display:grid;
+  place-items:center;
+  width:29px;
+  height:29px;
+  flex:0 0 29px;
+  color:var(--paper);
+}
+.button04_icon{
+  position:absolute;
+  display:grid;
+  grid-template-columns:repeat(5,3px);
+  gap:3px;
+  transition:transform .42s var(--ease),opacity .28s linear;
+}
+.button04_icon.is-arrow{
+  grid-template-columns:repeat(3,3px);
+  opacity:0;
+  transform:scale(.45) rotate(-35deg);
+}
+.button04_dot{
+  width:3px;
+  height:3px;
+  border-radius:50%;
+  background:currentColor;
+  transform:scale(1);
+  transition:transform .42s var(--ease),opacity .28s linear;
+  transition-delay:calc(var(--index,0) * 55ms);
+}
+.button04_icon.is-arrow .button04_dot{
+  transform:scale(0);
+}
+.button04_icon.is-arrow .button04_dot:nth-child(1),
+.button04_icon.is-arrow .button04_dot:nth-child(2),
+.button04_icon.is-arrow .button04_dot:nth-child(7),
+.button04_icon.is-arrow .button04_dot:nth-child(8){
+  visibility:hidden;
+}
+.button04:hover,
+.button04:focus-visible{
+  transform:translateY(-1px);
+  border-color:var(--cocoa);
+  box-shadow:0 9px 20px rgba(43,26,7,.16);
+}
+.button04:hover .button04_bg,
+.button04:focus-visible .button04_bg{
+  opacity:1;
+}
+.button04:hover .button04_icon:not(.is-arrow),
+.button04:focus-visible .button04_icon:not(.is-arrow){
+  opacity:0;
+  transform:scale(.4) rotate(35deg);
+}
+.button04:hover .button04_icon.is-arrow,
+.button04:focus-visible .button04_icon.is-arrow{
+  opacity:1;
+  transform:scale(1) rotate(0deg);
+}
+.button04:hover .button04_icon.is-arrow .button04_dot,
+.button04:focus-visible .button04_icon.is-arrow .button04_dot{
+  transform:scale(1);
+}
+.button04:focus-visible{
+  outline:3px solid var(--orange);
+  outline-offset:4px;
+}
+.note .button04{
+  margin-top:5px;
+}
+@media(max-width:600px){
+  .button04{
+    min-height:46px;
+    padding-inline:16px 10px;
+  }
+}
+@media(prefers-reduced-motion:reduce){
+  .button04,.button04_bg,.button04_icon,.button04_dot{
+    transition:none!important;
+  }
+}

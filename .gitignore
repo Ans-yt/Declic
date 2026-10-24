@@ -23,3 +23,5 @@ assets/Media kit/
 
 # Generated local OCR runtime copied from installed npm packages
 assets/vendor/
+# Local Claude project bundle: screenshots, reference docs and media, not application source
+Claude hyper/
