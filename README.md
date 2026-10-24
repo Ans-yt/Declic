@@ -7,9 +7,28 @@
 
 https://github.com/user-attachments/assets/5911716e-0f48-4c56-95e4-8f1ed4c0d590
 
-- **Project history:** [Changelog](CHANGELOG.md).
-- **Stack:** React, TypeScript, Vite, Tailwind CSS, Node.js, Express and SQLite.
-- **Languages:** French and English; the browser language selects the initial version, and a manual choice is remembered.
+---
+
+## Contents
+
+- [At a glance](#at-a-glance)
+- [Student experience](#student-experience)
+- [For education professionals](#for-education-professionals)
+- [Platform and trust](#platform-and-trust)
+- [Data and attribution](#data-and-attribution)
+- [Run and deploy](#run-and-deploy)
+- [Quality and project structure](#quality-and-project-structure)
+
+## At a glance
+
+| Area | Details |
+| --- | --- |
+| **Project history** | [Changelog](CHANGELOG.md) |
+| **Stack** | React, TypeScript, Vite, Tailwind CSS, Node.js, Express and SQLite |
+| **Languages** | French and English; the browser language selects the initial version, and a manual choice is remembered. |
+
+## Student experience
+
 - **Welcome:** watch the presentation in the selected language, try the labelled ENT-prefill demonstration, or complete a profile manually.
 - **Explore:** search the official Parcoursup catalogue, filter by region, save programmes, compare up to four and open their official listings.
 - **Understand:** programme details include available historical admissions figures, labelled by session and matched to the institution; missing values remain unavailable.
@@ -19,17 +38,43 @@ https://github.com/user-attachments/assets/5911716e-0f48-4c56-95e4-8f1ed4c0d590
 - **Personal planning:** add shortlist notes, questions and personal checklist dates; download calendar reminders. Personal dates are separate from official deadlines.
 - **Backup:** export/import a validated personal JSON backup of profile, CV text, favourites and planning. Uploaded images and professional records are excluded.
 - **Achievements:** add diploma and award images, edit their details and optionally request French/English OCR title suggestions on the device.
+
+## For education professionals
+
 - **Admissions workspace:** create fictional applications, record criteria and evidence, publish explained decisions and answer student clarification requests.
 - **Guided demo:** signed-in professionals can opt into a labelled fictional application scenario; progress follows the actual review, publication and clarification records.
 - **Teaching cover:** manage needs and availabilities, check compatibility and overlapping assignments, confirm or cancel cover and record completed hours.
+
+## Platform and trust
+
 - **Interface:** illustrated subject cards, a liquid-glass carousel, pauseable automatic scrolling, keyboard controls, accessible checkboxes and calendars, and searchable collapsible navigation.
 - **Persistence:** profiles, CVs, favourites, uploads and demonstration workflows are saved in isolated visitor workspaces in SQLite.
 - **Professional access:** server-checked passwords, HttpOnly sessions, rate limiting and logout; optional OIDC/PKCE integration requires an authorised institutional provider.
-- **Prototype limits:** ENT prefill is simulated. Institutional workflows use fictional records; official application submission, real recruitment checks, notifications and payroll are not connected.
+
+> [!IMPORTANT]
+> **Prototype limits:** ENT prefill is simulated. Institutional workflows use fictional records; official application submission, real recruitment checks, notifications and payroll are not connected.
+
+## Data and attribution
+
 - **Public data:** [Ministry programme catalogue](https://data.enseignementsup-recherche.gouv.fr/explore/dataset/fr-esr-cartographie_formations_parcoursup/) and [admissions history](https://data.enseignementsup-recherche.gouv.fr/explore/dataset/fr-esr-parcoursup/); attribution, retrieval dates and stale-cache notices appear in the app.
+
+## Run and deploy
+
 - **Run locally:** use Node.js 24, install with `npm ci`, then start with `npm run dev`; open [localhost:4173](http://127.0.0.1:4173/#connexion).
 - **Configure:** copy `.env.example` to `.env`; use fictional personal records while testing. Generate a professional password hash with `npm run staff:password`.
 - **Build and run:** run `npm run build`, set production values including `NODE_ENV=production` and the public HTTPS `APP_ORIGIN`, then run `npm start`.
 - **Deploy:** run the Node/Express application with one persistent SQLite instance; configure `PORT`, `HOST` and `DECLIC_DB` for the host. See [deployment settings](DEPLOYMENT.md).
+
+## Quality and project structure
+
 - **Check:** `npm run check`, `npm test` and `npm run build`; the regression suite covers persistence, permissions, uploads, admissions, scheduling, geography and translation.
-- **Source:** `src/` contains the interface; `server/` the API; `shared/` models and validation; `tests/` regression checks; `assets/` application media and third-party notices.
+
+**Source layout**
+
+| Path | Contents |
+| --- | --- |
+| `src/` | The interface |
+| `server/` | The API |
+| `shared/` | Models and validation |
+| `tests/` | Regression checks |
+| `assets/` | Application media and third-party notices |
